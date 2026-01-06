@@ -19,15 +19,30 @@ st.set_page_config(
 @st.cache_data(ttl=600)  # Refresh every 10 mins
 def load_data():
     try:
+        # 1. Read the CSV
         df = pd.read_csv(SHEET_URL)
         
-        # Ensure column names match your sheet exactly
-        # Based on your screenshot: ID, Name, Team, Date, Distance (km), Effort, Time (min), Pace (min/km), Elevation (m), Type
+        # 2. DROP GHOST ROWS (Crucial Step)
+        # This removes rows where 'Team' or 'Date' is empty (NaN)
+        # This fixes the "str vs float" sort error immediately
+        df = df.dropna(subset=['Team', 'Date', 'Name'])
         
-        # Parse Dates
+        # 3. Parse Dates
         df['Date'] = pd.to_datetime(df['Date'])
         
-        # Handle Numeric Columns (coerce errors to 0 just in case)
+        # 4. Filter for 2026 Data Only (Optional but Recommended)
+        # Since you mentioned "hidden runs from before start of the year"
+        # This ensures they never show up in your stats.
+        start_date = pd.Timestamp("2026-01-01")
+        df = df[df['Date'] >= start_date]
+
+        # 5. Handle Text Columns (Safety Net)
+        # Ensures everything left is strictly a string
+        df['Team'] = df['Team'].astype(str)
+        df['Type'] = df['Type'].astype(str)
+        df['Name'] = df['Name'].astype(str)
+
+        # 6. Handle Numeric Columns
         cols_to_numeric = ['Distance (km)', 'Effort', 'Time (min)', 'Elevation (m)']
         for col in cols_to_numeric:
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
