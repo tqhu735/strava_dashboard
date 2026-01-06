@@ -84,7 +84,7 @@ filtered_df = df[mask]
 
 
 # --- MAIN DASHBOARD ---
-st.title("Sleep Comp Fitness Challenge 2026")
+st.title("Sleep Comp Fitness Challenge")
 st.markdown(f"*Tracking activities from **{date_range[0]}** to **{date_range[1]}***")
 
 # Top level metrics
