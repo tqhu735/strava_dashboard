@@ -16,7 +16,7 @@ st.set_page_config(
 )
 
 # --- DATA LOADING ---
-@st.cache_data(ttl=60*30)  # Refresh every 30 minutes
+@st.cache_data(ttl=10)  # Refresh every 30 minutes
 def load_data():
     try:
         # Read and drop empty rows
