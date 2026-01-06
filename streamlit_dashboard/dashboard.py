@@ -16,7 +16,7 @@ st.set_page_config(
 )
 
 # --- DATA LOADING ---
-@st.cache_data(ttl=10)  # Refresh every 30 minutes
+@st.cache_data(ttl=10)  # Refresh every 10 seconds
 def load_data():
     try:
         # Read and drop empty rows
@@ -49,7 +49,7 @@ if df.empty:
 # --- SIDEBAR FILTERS ---
 st.sidebar.header("Filters")
 
-if st.sidebar.button("Update Data", use_container_width=True):
+if st.sidebar.button("Update Data", width="stretch"):
     load_data.clear()
     st.rerun()
 
@@ -73,12 +73,17 @@ selected_teams = st.sidebar.pills("Select Teams", all_teams, default=all_teams, 
 all_types = sorted(df['Type'].unique().tolist())
 selected_types = st.sidebar.pills("Activity Type", all_types, default=all_types, selection_mode="multi")
 
+# Competitor filter
+all_names = sorted(df['Name'].unique().tolist())
+selected_names = st.sidebar.pills("Competitors", all_names, default=all_names, selection_mode="multi")
+
 # Apply filters
 mask = (
     (df['Date'].dt.date >= date_range[0]) &
     (df['Date'].dt.date <= date_range[1]) &
     (df['Team'].isin(selected_teams)) &
-    (df['Type'].isin(selected_types))
+    (df['Type'].isin(selected_types)) &
+    (df['Name'].isin(selected_names))
 )
 filtered_df = df[mask]
 
@@ -108,7 +113,7 @@ with col_team:
     st.subheader("Team Standings")
     team_stats = filtered_df.groupby('Team')[['Effort', 'Distance (km)']].sum().sort_values('Effort', ascending=False).reset_index()
     
-    st.dataframe(team_stats, use_container_width=True, hide_index=True)
+    st.dataframe(team_stats, width="stretch", hide_index=True)
 
 with col_indiv:
     st.subheader("Individual Leaderboard")
@@ -122,7 +127,7 @@ with col_indiv:
             "Distance (km)": "{:.1f}",
             "Time (min)": "{:.0f}"
         }),
-        use_container_width=True
+        width="stretch"
     )
 
 st.divider()
@@ -143,7 +148,7 @@ line_chart = alt.Chart(chart_df).mark_line(point=True).encode(
     tooltip=['Date', 'Name', 'Type', 'Distance (km)', 'Effort']
 ).interactive()
 
-st.altair_chart(line_chart, use_container_width=True)
+st.altair_chart(line_chart, width="stretch")
 
 # --- RECENT ACTIVITY FEED ---
 st.subheader("Recent Activities")
@@ -158,6 +163,6 @@ st.dataframe(
         "Effort": "{:.2f}",
         "Pace (min/km)": "{:.2f}"
     }),
-    use_container_width=True,
+    width="stretch",
     hide_index=True
 )
