@@ -122,7 +122,7 @@ fun_facts = [
     # Distance
     f"**{total_km / 42.195:.1f}** Marathons worth of distance 🏃",
     f"**{total_km / 1600:.2f}x** the length of New Zealand 🇳🇿",
-    f"**{(total_km / 69420) * 100:.4f}%** of the way around Your Mom 🤰",
+    f"**{(total_km / 69420) * 100:.4f}%** of the way around your mom 🤰",
     
     # Elevation
     f"**{total_elevation / 328:.1f}** times the Auckland Sky Tower 🗼",
@@ -256,6 +256,49 @@ st.divider()
 
 
 # --- CHARTS ---
+st.subheader("Activity Heatmap")
+
+# Prepare data for heatmap
+heatmap_df = filtered_df.copy()
+heatmap_df['Year'] = heatmap_df['Date'].dt.year
+heatmap_df['Week'] = heatmap_df['Date'].dt.isocalendar().week
+heatmap_df['Day'] = heatmap_df['Date'].dt.day_name()
+heatmap_df['DayNum'] = heatmap_df['Date'].dt.dayofweek # 0=Mon, 6=Sun
+
+# Group by date to get daily totals for tooltips
+daily_summary = heatmap_df.groupby('Date').agg({
+    'Effort': 'sum',
+    'Distance (km)': 'sum',
+    'Name': lambda x: ', '.join(sorted(x.unique())),
+    'Type': lambda x: ', '.join(sorted(x.unique()))
+}).reset_index()
+
+daily_summary['Year'] = daily_summary['Date'].dt.year
+daily_summary['Week'] = daily_summary['Date'].dt.isocalendar().week
+daily_summary['Day'] = daily_summary['Date'].dt.day_name()
+daily_summary['DayNum'] = daily_summary['Date'].dt.dayofweek
+
+# Create the heatmap
+heatmap = alt.Chart(daily_summary).mark_rect().encode(
+    x=alt.X('Week:O', title='Week of Year'),
+    y=alt.Y('Day:N', sort=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], title='Day of Week'),
+    color=alt.Color('Effort:Q', title='Daily Effort', scale=alt.Scale(scheme='greens')),
+    tooltip=[
+        alt.Tooltip('Date:T', format='%Y-%m-%d'),
+        alt.Tooltip('Effort:Q', format='.1f', title='Total Effort'),
+        alt.Tooltip('Distance (km):Q', format='.1f', title='Total Km'),
+        alt.Tooltip('Name:N', title='People'),
+        alt.Tooltip('Type:N', title='Activities')
+    ]
+).properties(
+    height=250
+).configure_axis(
+    labelFontSize=10,
+    titleFontSize=12
+)
+
+st.altair_chart(heatmap, use_container_width=True)
+
 st.subheader("Effort Over Time")
 
 # Create cumulative sum for Effort
