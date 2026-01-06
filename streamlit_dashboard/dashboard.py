@@ -49,6 +49,12 @@ if df.empty:
 # --- SIDEBAR FILTERS ---
 st.sidebar.header("Filters")
 
+if st.sidebar.button("Update Data", use_container_width=True):
+    load_data.clear()
+    st.rerun()
+
+st.sidebar.divider()
+
 # Date range filter
 min_date = df['Date'].min()
 max_date = df['Date'].max()
