@@ -6,7 +6,6 @@ import altair as alt
 import datetime
 
 # --- CONFIG ---
-# Replace with your actual "Publish to Web" CSV link
 SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRePCvC9b_RY80n7ulOgVQQwKEWi5GZm8gDeyl7UTaTBONtAOqOsNgGGRm5R9vQtoospZ7RaPbIupBp/pub?gid=0&single=true&output=csv"
 
 st.set_page_config(
@@ -14,6 +13,7 @@ st.set_page_config(
     page_icon="🏃",
     layout="wide"
 )
+
 
 # --- DATA LOADING ---
 @st.cache_data(ttl=10)  # Refresh every 10 seconds
@@ -45,6 +45,7 @@ df = load_data()
 
 if df.empty:
     st.stop()
+
 
 # --- SIDEBAR FILTERS ---
 st.sidebar.header("Filters")
@@ -106,6 +107,7 @@ c4.metric("Total Elevation", f"{total_elevation:,.1f} m")
 
 st.divider()
 
+
 # --- LEADERBOARDS ---
 col_team, col_indiv = st.columns([1, 2])
 
@@ -116,7 +118,7 @@ with col_team:
     st.dataframe(team_stats, width="stretch", hide_index=True)
 
 with col_indiv:
-    st.subheader("Individual Leaderboard")
+    st.subheader("Individual Standings")
     indiv_stats = filtered_df.groupby(['Name', 'Team'])[['Effort', 'Distance (km)', 'Time (min)']].sum().reset_index()
     indiv_stats = indiv_stats.sort_values('Effort', ascending=False).reset_index(drop=True)
     indiv_stats.index += 1  # Start ranking at 1
@@ -149,6 +151,7 @@ line_chart = alt.Chart(chart_df).mark_line(point=True).encode(
 ).interactive()
 
 st.altair_chart(line_chart, width="stretch")
+
 
 # --- RECENT ACTIVITY FEED ---
 st.subheader("Recent Activities")
