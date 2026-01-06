@@ -3,6 +3,7 @@ import pandas as pd
 import altair as alt
 import datetime
 import numpy as np
+import random
 
 # --- CONFIG ---
 SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRePCvC9b_RY80n7ulOgVQQwKEWi5GZm8gDeyl7UTaTBONtAOqOsNgGGRm5R9vQtoospZ7RaPbIupBp/pub?gid=0&single=true&output=csv"
@@ -115,6 +116,29 @@ c2.metric("Total Effort", f"{total_effort:,.1f}")
 c3.metric("Total Time", time_display)
 c4.metric("Total Activities", f"{total_runs}")
 c5.metric("Total Elevation", f"{total_elevation:,.1f} m")
+
+# --- FUN STATS ---
+fun_facts = [
+    # Distance
+    f"**{total_km / 42.195:.1f}** Marathons worth of distance 🏃",
+    f"**{total_km / 1600:.2f}x** the length of New Zealand 🇳🇿",
+    f"**{(total_km / 69420) * 100:.4f}%** of the way around Your Mom 🤰",
+    
+    # Elevation
+    f"**{total_elevation / 328:.1f}** times the Auckland Sky Tower 🗼",
+    f"**{total_elevation / 8848:.2f}** Mount Everests climbed 🏔️",
+    f"**{total_elevation / 8611:.2f}** K2 summits 🗻",
+    f"**{total_elevation / 408000:.4f}** times the height of the ISS 🛰️",
+    
+    # Time
+    f"the time in which **{int(total_time_min * 260):,}** babies were born 👶",
+    f"**{total_time_min / 480:.1f}** full 8-hour work days 💼",
+    f"**{total_time_min / 90:.1f}** complete sleep cycles 😴",
+    f"**{total_time_min / 22:.1f}** episodes of Friends ☕️"
+]
+
+selected_facts = random.sample(fun_facts, 3)
+st.info("**That's equivalent to:**\n\n" + "\n\n".join([f"• {fact}" for fact in selected_facts]))
 
 st.divider()
 
