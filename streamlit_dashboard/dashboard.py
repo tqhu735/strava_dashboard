@@ -1,9 +1,8 @@
-
-
 import streamlit as st
 import pandas as pd
 import altair as alt
 import datetime
+import numpy as np
 
 # --- CONFIG ---
 SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRePCvC9b_RY80n7ulOgVQQwKEWi5GZm8gDeyl7UTaTBONtAOqOsNgGGRm5R9vQtoospZ7RaPbIupBp/pub?gid=0&single=true&output=csv"
@@ -125,6 +124,80 @@ with col_team:
     team_stats = filtered_df.groupby('Team')[['Effort', 'Distance (km)']].sum().sort_values('Effort', ascending=False).reset_index()
     
     st.dataframe(team_stats, width="stretch", hide_index=True)
+
+    # --- WIN PROBABILITY ---
+    st.subheader("Predicted Win Chance")
+    
+    # Configuration - Hardcoded End Date
+    COMPETITION_END_DATE = datetime.date(2026, 12, 31)
+    
+    # 1. Calculate remaining days
+    today = datetime.date.today()
+    days_remaining = (COMPETITION_END_DATE - today).days
+    
+    if days_remaining > 0:
+        # 2. Daily stats per team
+        # We need to make sure we include 0-effort days in the stats if they are valid days, 
+        # but for simplicity based on the prompt "mean and SD of effort per day", 
+        # we will aggregate by existing data points. 
+        # Ideally we should reindex by all dates, but we'll stick to the user's "mean/sd of effort" intuition on available data.
+        
+        # Group by Team and Date first to get daily totals
+        daily_effort = df.groupby(['Team', 'Date'])['Effort'].sum().reset_index()
+        
+        # Calculate Mean and SD per team
+        team_stats_daily = daily_effort.groupby('Team')['Effort'].agg(['mean', 'std']).fillna(0)
+        
+        # Current totals
+        current_totals = df.groupby('Team')['Effort'].sum()
+        
+        # 3. Monte Carlo Simulation
+        N_SIMULATIONS = 10000
+        teams = current_totals.index.tolist()
+        sim_results = {team: 0 for team in teams}
+        
+        # Create a matrix of future efforts: (N_SIMULATIONS, n_teams)
+        # We simulate the *total* future effort for the remaining days
+        # Total Future ~ N(mean * days, std * sqrt(days))
+        
+        future_efforts = {}
+        for team in teams:
+            mu = team_stats_daily.loc[team, 'mean']
+            sigma = team_stats_daily.loc[team, 'std']
+            
+            # Simulated total remaining effort
+            # The sum of N independent normal variables N(mu, sigma) is N(N*mu, sqrt(N)*sigma)
+            sim_mu = mu * days_remaining
+            sim_sigma = sigma * np.sqrt(days_remaining)
+            
+            future_efforts[team] = np.random.normal(sim_mu, sim_sigma, N_SIMULATIONS)
+        
+        # Add current totals to get final simulated totals
+        final_scores = pd.DataFrame(index=range(N_SIMULATIONS))
+        for team in teams:
+            final_scores[team] = current_totals[team] + future_efforts[team]
+            
+        # Determine winner for each simulation
+        winners = final_scores.idxmax(axis=1)
+        win_counts = winners.value_counts()
+        
+        # Calculate probabilities
+        win_probs = (win_counts / N_SIMULATIONS).reset_index()
+        win_probs.columns = ['Team', 'Probability']
+        
+        # 4. Visualization (Donut Chart)
+        prob_chart = alt.Chart(win_probs).mark_arc(innerRadius=60).encode(
+            theta=alt.Theta(field="Probability", type="quantitative"),
+            color=alt.Color(field="Team", type="nominal"),
+            tooltip=['Team', alt.Tooltip('Probability', format='.1%')],
+            order=alt.Order("Probability", sort="descending")
+        ).properties(height=200)
+        
+        st.altair_chart(prob_chart, use_container_width=True)
+        st.caption(f"Based on daily effort history. Simulating {days_remaining} remaining days.")
+        
+    else:
+        st.info("Competition has ended.")
 
 with col_indiv:
     st.subheader("Individual Standings")
