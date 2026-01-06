@@ -67,11 +67,11 @@ date_range = st.sidebar.date_input(
 
 # Team filter
 all_teams = sorted(df['Team'].unique().tolist())
-selected_teams = st.sidebar.multiselect("Select Teams", all_teams, default=all_teams)
+selected_teams = st.sidebar.pills("Select Teams", all_teams, default=all_teams, selection_mode="multi")
 
 # Activity type filter
 all_types = sorted(df['Type'].unique().tolist())
-selected_types = st.sidebar.multiselect("Activity Type", all_types, default=all_types)
+selected_types = st.sidebar.pills("Activity Type", all_types, default=all_types, selection_mode="multi")
 
 # Apply filters
 mask = (
