@@ -10,39 +10,28 @@ import datetime
 SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRePCvC9b_RY80n7ulOgVQQwKEWi5GZm8gDeyl7UTaTBONtAOqOsNgGGRm5R9vQtoospZ7RaPbIupBp/pub?gid=0&single=true&output=csv"
 
 st.set_page_config(
-    page_title="Sleep Comp Strava Tracker",
+    page_title="Sleep Comp Fitness Challenge",
     page_icon="🏃",
     layout="wide"
 )
 
 # --- DATA LOADING ---
-@st.cache_data(ttl=600)  # Refresh every 10 mins
+@st.cache_data(ttl=60*30)  # Refresh every 30 minutes
 def load_data():
     try:
-        # 1. Read the CSV
+        # Read and drop empty rows
         df = pd.read_csv(SHEET_URL)
-        
-        # 2. DROP GHOST ROWS (Crucial Step)
-        # This removes rows where 'Team' or 'Date' is empty (NaN)
-        # This fixes the "str vs float" sort error immediately
         df = df.dropna(subset=['Team', 'Date', 'Name'])
         
-        # 3. Parse Dates
+        # Parse dates
         df['Date'] = pd.to_datetime(df['Date'])
-        
-        # 4. Filter for 2026 Data Only (Optional but Recommended)
-        # Since you mentioned "hidden runs from before start of the year"
-        # This ensures they never show up in your stats.
-        start_date = pd.Timestamp("2026-01-01")
-        df = df[df['Date'] >= start_date]
 
-        # 5. Handle Text Columns (Safety Net)
-        # Ensures everything left is strictly a string
+        # Convert columns to strings
         df['Team'] = df['Team'].astype(str)
         df['Type'] = df['Type'].astype(str)
         df['Name'] = df['Name'].astype(str)
 
-        # 6. Handle Numeric Columns
+        # Handle numeric columns
         cols_to_numeric = ['Distance (km)', 'Effort', 'Time (min)', 'Elevation (m)']
         for col in cols_to_numeric:
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
@@ -60,7 +49,7 @@ if df.empty:
 # --- SIDEBAR FILTERS ---
 st.sidebar.header("Filters")
 
-# Year/Month Filter (Optional, defaults to all time)
+# Date range filter
 min_date = df['Date'].min()
 max_date = df['Date'].max()
 date_range = st.sidebar.date_input(
@@ -70,15 +59,15 @@ date_range = st.sidebar.date_input(
     max_value=max_date
 )
 
-# Team Filter
+# Team filter
 all_teams = sorted(df['Team'].unique().tolist())
 selected_teams = st.sidebar.multiselect("Select Teams", all_teams, default=all_teams)
 
-# Activity Type Filter
+# Activity type filter
 all_types = sorted(df['Type'].unique().tolist())
 selected_types = st.sidebar.multiselect("Activity Type", all_types, default=all_types)
 
-# Apply Filters
+# Apply filters
 mask = (
     (df['Date'].dt.date >= date_range[0]) &
     (df['Date'].dt.date <= date_range[1]) &
@@ -87,19 +76,22 @@ mask = (
 )
 filtered_df = df[mask]
 
+
 # --- MAIN DASHBOARD ---
-st.title("🏃 Sleep Comp 100k Challenge")
+st.title("Sleep Comp Fitness Challenge 2026")
 st.markdown(f"*Tracking activities from **{date_range[0]}** to **{date_range[1]}***")
 
-# Top Level Metrics
+# Top level metrics
 total_km = filtered_df['Distance (km)'].sum()
 total_effort = filtered_df['Effort'].sum()
 total_runs = len(filtered_df)
+total_elevation = filtered_df['Elevation (m)'].sum()
 
-c1, c2, c3 = st.columns(3)
+c1, c2, c3, c4 = st.columns(4)
 c1.metric("Total Distance", f"{total_km:,.1f} km")
-c2.metric("Total Effort Points", f"{total_effort:,.1f}")
+c2.metric("Total Effort", f"{total_effort:,.1f}")
 c3.metric("Total Activities", f"{total_runs}")
+c4.metric("Total Elevation", f"{total_elevation:,.1f} m")
 
 st.divider()
 
@@ -107,19 +99,13 @@ st.divider()
 col_team, col_indiv = st.columns([1, 2])
 
 with col_team:
-    st.subheader("🏆 Team Standings")
+    st.subheader("Team Standings")
     team_stats = filtered_df.groupby('Team')[['Effort', 'Distance (km)']].sum().sort_values('Effort', ascending=False).reset_index()
     
-    # Display as a clean dataframe or styled table
-    st.dataframe(
-        team_stats.style.format({"Effort": "{:.1f}", "Distance (km)": "{:.1f}"})
-        .background_gradient(cmap="Oranges", subset=["Effort"]),
-        use_container_width=True,
-        hide_index=True
-    )
+    st.dataframe(team_stats, use_container_width=True, hide_index=True)
 
 with col_indiv:
-    st.subheader("👤 Individual Leaderboard")
+    st.subheader("Individual Leaderboard")
     indiv_stats = filtered_df.groupby(['Name', 'Team'])[['Effort', 'Distance (km)', 'Time (min)']].sum().reset_index()
     indiv_stats = indiv_stats.sort_values('Effort', ascending=False).reset_index(drop=True)
     indiv_stats.index += 1  # Start ranking at 1
@@ -135,11 +121,11 @@ with col_indiv:
 
 st.divider()
 
-# --- CHARTS ---
-st.subheader("📈 Progress Over Time (Effort Points)")
 
-# Create Cumulative Sum for the Chart
-# Sort by date first
+# --- CHARTS ---
+st.subheader("Effort Over Time")
+
+# Create cumulative sum for Effort
 chart_df = filtered_df.sort_values('Date')
 chart_df['Cumulative Effort'] = chart_df.groupby('Name')['Effort'].cumsum()
 
@@ -154,7 +140,7 @@ line_chart = alt.Chart(chart_df).mark_line(point=True).encode(
 st.altair_chart(line_chart, use_container_width=True)
 
 # --- RECENT ACTIVITY FEED ---
-st.subheader("📅 Recent Activities")
+st.subheader("Recent Activities")
 recent_df = filtered_df.sort_values('Date', ascending=False).head(15)
 
 # Select and rename columns for display
@@ -163,7 +149,8 @@ st.dataframe(
     recent_df[display_cols].style.format({
         "Date": lambda t: t.strftime("%Y-%m-%d"),
         "Distance (km)": "{:.2f}",
-        "Effort": "{:.2f}"
+        "Effort": "{:.2f}",
+        "Pace (min/km)": "{:.2f}"
     }),
     use_container_width=True,
     hide_index=True
