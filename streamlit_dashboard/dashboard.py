@@ -98,12 +98,21 @@ total_km = filtered_df['Distance (km)'].sum()
 total_effort = filtered_df['Effort'].sum()
 total_runs = len(filtered_df)
 total_elevation = filtered_df['Elevation (m)'].sum()
+total_time_min = filtered_df['Time (min)'].sum()
 
-c1, c2, c3, c4 = st.columns(4)
+# Convert time to hours/minutes for display
+hours = int(total_time_min // 60)
+minutes = int(total_time_min % 60)
+days = int(hours // 24)
+hours = int(hours % 24)
+time_display = f"{days}d {hours}h {minutes}m" if days > 0 else f"{hours}h {minutes}m"
+
+c1, c2, c3, c4, c5 = st.columns(5)
 c1.metric("Total Distance", f"{total_km:,.1f} km")
 c2.metric("Total Effort", f"{total_effort:,.1f}")
-c3.metric("Total Activities", f"{total_runs}")
-c4.metric("Total Elevation", f"{total_elevation:,.1f} m")
+c3.metric("Total Time", time_display)
+c4.metric("Total Activities", f"{total_runs}")
+c5.metric("Total Elevation", f"{total_elevation:,.1f} m")
 
 st.divider()
 
