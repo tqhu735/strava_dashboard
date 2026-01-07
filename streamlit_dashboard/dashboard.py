@@ -10,7 +10,7 @@ import numpy as np
 import random
 
 from utils.data_manager import load_data, get_data_summary, get_manual_fun_facts
-from utils.ai_manager import generate_ai_content, get_model
+from utils.ai_manager import generate_ai_content, get_client
 
 # --- Configuration ---
 COMPETITION_START_DATE = datetime.date(2026, 1, 1)
@@ -34,7 +34,7 @@ CURRENT_MONTH = TODAY.strftime('%Y-%m')
 # --- Sidebar Filters ---
 st.sidebar.header("Filters")
 
-if st.sidebar.button("Update Data", use_container_width=True):
+if st.sidebar.button("Update Data", width='stretch'):
     load_data.clear()
     st.rerun()
 
@@ -146,19 +146,19 @@ with col_team:
         month_data = filtered_df[filtered_df['Month'] == CURRENT_MONTH]
         if not month_data.empty:
             stats = month_data.groupby('Team')[['Effort', 'Distance (km)']].sum().sort_values('Effort', ascending=False).reset_index()
-            st.dataframe(stats, use_container_width=True, hide_index=True)
+            st.dataframe(stats, width='stretch', hide_index=True)
         else:
             st.info("No activities for the current month.")
 
     with tab_year:
         stats = filtered_df.groupby('Team')[['Effort', 'Distance (km)']].sum().sort_values('Effort', ascending=False).reset_index()
-        st.dataframe(stats, use_container_width=True, hide_index=True)
+        st.dataframe(stats, width='stretch', hide_index=True)
 
     with tab_history:
         st.caption("Winners of each month")
         history_table = get_winner_history(history_df_base, ['Team'])
         if not history_table.empty:
-            st.dataframe(history_table, use_container_width=True, hide_index=True)
+            st.dataframe(history_table, width='stretch', hide_index=True)
         else:
             st.info("No data available for history.")
 
@@ -198,7 +198,7 @@ with col_team:
             order=alt.Order("Probability", sort="descending")
         ).properties(height=200)
         
-        st.altair_chart(prob_chart, use_container_width=True)
+        st.altair_chart(prob_chart, width='stretch')
         st.caption(f"10k simulations over {days_remaining} remaining days.")
     else:
         st.info("Competition has ended.")
@@ -215,7 +215,7 @@ with col_indiv:
             stats = month_data_indiv.groupby(['Name', 'Team'])[['Effort', 'Distance (km)', 'Time (min)']].sum().reset_index()
             stats = stats.sort_values('Effort', ascending=False).reset_index(drop=True)
             stats.index += 1
-            st.dataframe(stats.style.format({"Effort": "{:.1f}", "Distance (km)": "{:.1f}", "Time (min)": "{:.0f}"}), use_container_width=True)
+            st.dataframe(stats.style.format({"Effort": "{:.1f}", "Distance (km)": "{:.1f}", "Time (min)": "{:.0f}"}), width='stretch')
         else:
             st.info("No activities for the current month.")
 
@@ -223,13 +223,13 @@ with col_indiv:
         stats = filtered_df.groupby(['Name', 'Team'])[['Effort', 'Distance (km)', 'Time (min)']].sum().reset_index()
         stats = stats.sort_values('Effort', ascending=False).reset_index(drop=True)
         stats.index += 1
-        st.dataframe(stats.style.format({"Effort": "{:.1f}", "Distance (km)": "{:.1f}", "Time (min)": "{:.0f}"}), use_container_width=True)
+        st.dataframe(stats.style.format({"Effort": "{:.1f}", "Distance (km)": "{:.1f}", "Time (min)": "{:.0f}"}), width='stretch')
     
     with indiv_tab_history:
         st.caption("Winners of each month")
         history_table_indiv = get_winner_history(history_df_base, ['Name', 'Team'])
         if not history_table_indiv.empty:
-            st.dataframe(history_table_indiv, use_container_width=True, hide_index=True)
+            st.dataframe(history_table_indiv, width='stretch', hide_index=True)
         else:
             st.info("No data available for history.")
 
@@ -263,7 +263,7 @@ heatmap = alt.Chart(daily_summary).mark_rect().encode(
     ]
 ).properties(height=250).configure_axis(labelFontSize=10, titleFontSize=12)
 
-st.altair_chart(heatmap, use_container_width=True)
+st.altair_chart(heatmap, width='stretch')
 
 # --- Effort Trends ---
 st.subheader("Effort Over Time")
@@ -277,7 +277,7 @@ line_chart = alt.Chart(chart_df).mark_line(point=True).encode(
     tooltip=['Date', 'Name', 'Type', 'Distance (km)', 'Effort']
 ).interactive()
 
-st.altair_chart(line_chart, use_container_width=True)
+st.altair_chart(line_chart, width='stretch')
 
 # --- Recent Activity Feed ---
 st.subheader("Recent Activities")
@@ -290,7 +290,7 @@ st.dataframe(
         "Effort": "{:.2f}",
         "Pace (min/km)": "{:.2f}"
     }),
-    use_container_width=True,
+    width='stretch',
     hide_index=True
 )
 
@@ -298,13 +298,15 @@ st.dataframe(
 with ai_placeholder.container():
     manual_facts = get_manual_fun_facts(filtered_df)
     
-    if get_model('dummy-check'):
+    if get_client():
         with st.spinner("Generating insights..."):
             data_summary = get_data_summary(filtered_df)
             ai_data = get_ai_content_cached(data_summary)
             
             st.subheader("Summary")
             st.info(ai_data.get('insight', "The coach is currently judging you in silence."))
+            if 'model' in ai_data:
+                st.caption(f"Generated with: {ai_data['model']}")
             
             st.subheader("Fun Facts")
             ai_facts = ai_data.get('facts', [])

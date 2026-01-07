@@ -4,5 +4,5 @@ altair
 matplotlib
 numpy
 scipy
-google-generativeai
+google-genai
 python-dotenv
