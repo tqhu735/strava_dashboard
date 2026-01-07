@@ -306,7 +306,7 @@ with ai_placeholder.container():
             st.subheader("Summary")
             st.info(ai_data.get('insight', "The coach is currently judging you in silence."))
             
-            st.subheader("Did You Know?")
+            st.subheader("Fun Facts")
             ai_facts = ai_data.get('facts', [])
             if ai_facts and not any("Error" in f or "AI is being shy" in f for f in ai_facts):
                 for fact in ai_facts:
@@ -315,5 +315,5 @@ with ai_placeholder.container():
                 for fact in random.sample(manual_facts, min(3, len(manual_facts))):
                     st.write(f"• {fact}")
     else:
-        st.subheader("Did You Know?")
+        st.subheader("Fun Facts")
         st.info("\n\n".join([f"• {fact}" for fact in random.sample(manual_facts, min(3, len(manual_facts)))]))
