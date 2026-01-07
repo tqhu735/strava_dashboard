@@ -201,9 +201,6 @@ with col_team:
         if not month_data.empty:
             month_stats = month_data.groupby('Team')[['Effort', 'Distance (km)']].sum().sort_values('Effort', ascending=False).reset_index()
             st.dataframe(month_stats, width="stretch", hide_index=True)
-            if not month_stats.empty:
-                leader = month_stats.iloc[0]
-                st.success(f"Current Leader: **Team {leader['Team']}** with {leader['Effort']:.1f}")
         else:
             st.info("No activities found for the current month.")
 
