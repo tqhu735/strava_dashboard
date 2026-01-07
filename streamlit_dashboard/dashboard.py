@@ -275,7 +275,7 @@ line_chart = alt.Chart(chart_df).mark_line(point=True).encode(
     y='Cumulative Effort:Q',
     color='Name:N',
     tooltip=['Date', 'Name', 'Type', 'Distance (km)', 'Effort']
-).interactive()
+)
 
 st.altair_chart(line_chart, width='stretch')
 
