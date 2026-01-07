@@ -169,7 +169,7 @@ def get_winner_history(source_df, group_cols, value_col='Effort'):
                 'Winner': winner[group_cols[0]] if len(group_cols) == 1 else winner[group_cols[0]], # Primary identifier
                 'Effort': winner[value_col]
             }
-             # If grouping by Name, include Team
+            # If grouping by Name, include Team
             if 'Name' in group_cols:
                 entry['Team'] = winner['Team']
             
@@ -212,7 +212,7 @@ with col_team:
         st.caption("Winners of each month")
         history_table = get_winner_history(history_df_base, ['Team'])
         if not history_table.empty:
-             st.dataframe(history_table, width="stretch", hide_index=True)
+            st.dataframe(history_table, width="stretch", hide_index=True)
         else:
             st.info("No data available for history.")
 
