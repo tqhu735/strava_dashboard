@@ -121,7 +121,7 @@ def display_metrics(dataframe):
     c2.metric("Total Effort", f"{total_effort:,.1f}")
     c3.metric("Total Time", time_display)
     c4.metric("Total Activities", f"{total_runs}")
-    c5.metric("Total Elevation", f"{total_elevation:,.1f} m")
+    c5.metric("Total Elevation", f"{int(total_elevation)} m")
 
 display_metrics(filtered_df)
 
