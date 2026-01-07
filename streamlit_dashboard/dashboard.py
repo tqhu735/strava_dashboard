@@ -5,9 +5,8 @@ import datetime
 import numpy as np
 import random
 
-# --- CONFIG ---
+# --- CONFIGURATION ---
 SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRePCvC9b_RY80n7ulOgVQQwKEWi5GZm8gDeyl7UTaTBONtAOqOsNgGGRm5R9vQtoospZ7RaPbIupBp/pub?gid=0&single=true&output=csv"
-
 COMPETITION_START_DATE = datetime.date(2026, 1, 1)
 COMPETITION_END_DATE = datetime.date(2026, 12, 31)
 
@@ -17,27 +16,27 @@ st.set_page_config(
     layout="wide"
 )
 
-
 # --- DATA LOADING ---
 @st.cache_data(ttl=60*30)  # Refresh every 30 minutes
 def load_data():
+    """
+    Loads data from the Google Sheet, performs initial cleaning and type conversion.
+    """
     try:
-        # Read and drop empty rows
         df = pd.read_csv(SHEET_URL)
         df = df.dropna(subset=['Team', 'Date', 'Name'])
         
-        # Parse dates
+        # Date parsing
         df['Date'] = pd.to_datetime(df['Date'])
+        
+        # String conversions
+        for col in ['Team', 'Type', 'Name']:
+            df[col] = df[col].astype(str)
 
-        # Convert columns to strings
-        df['Team'] = df['Team'].astype(str)
-        df['Type'] = df['Type'].astype(str)
-        df['Name'] = df['Name'].astype(str)
-
-        # Handle numeric columns
+        # Numeric conversions
         cols_to_numeric = ['Distance (km)', 'Effort', 'Time (min)', 'Elevation (m)']
         for col in cols_to_numeric:
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0) # Default to 0 for bad data
 
         return df
     except Exception as e:
@@ -48,7 +47,10 @@ df = load_data()
 
 if df.empty:
     st.stop()
-
+    
+# Add derived columns globally
+df['Month'] = df['Date'].dt.strftime('%Y-%m')
+current_month = datetime.date.today().strftime('%Y-%m')
 
 # --- SIDEBAR FILTERS ---
 st.sidebar.header("Filters")
@@ -59,7 +61,7 @@ if st.sidebar.button("Update Data", width="stretch"):
 
 st.sidebar.divider()
 
-# Date range filter
+# Date Range Filter
 min_date = df['Date'].min()
 max_date = df['Date'].max()
 date_range = st.sidebar.date_input(
@@ -69,157 +71,193 @@ date_range = st.sidebar.date_input(
     max_value=max_date
 )
 
-# Team filter
+# Categorical Filters
 all_teams = sorted(df['Team'].unique().tolist())
 selected_teams = st.sidebar.pills("Select Teams", all_teams, default=all_teams, selection_mode="multi")
 
-# Activity type filter
 all_types = sorted(df['Type'].unique().tolist())
 selected_types = st.sidebar.pills("Activity Type", all_types, default=all_types, selection_mode="multi")
 
-# Competitor filter
 all_names = sorted(df['Name'].unique().tolist())
 selected_names = st.sidebar.pills("Competitors", all_names, default=all_names, selection_mode="multi")
 
-# Apply filters
-mask = (
-    (df['Date'].dt.date >= date_range[0]) &
-    (df['Date'].dt.date <= date_range[1]) &
-    (df['Team'].isin(selected_teams)) &
-    (df['Type'].isin(selected_types)) &
-    (df['Name'].isin(selected_names))
-)
-filtered_df = df[mask]
-
+# Apply Filters
+# Ensure date_range has two values (dts returns a tuple of length 1 during selection)
+if len(date_range) == 2:
+    start_date, end_date = date_range
+    mask = (
+        (df['Date'].dt.date >= start_date) &
+        (df['Date'].dt.date <= end_date) &
+        (df['Team'].isin(selected_teams)) &
+        (df['Type'].isin(selected_types)) &
+        (df['Name'].isin(selected_names))
+    )
+    filtered_df = df[mask]
+else:
+    filtered_df = df # Fallback if range selection is incomplete
 
 # --- MAIN DASHBOARD ---
 st.title("Sleep Comp Fitness Challenge")
-st.markdown(f"*Tracking activities from **{date_range[0]}** to **{date_range[1]}***")
+if len(date_range) == 2:
+    st.markdown(f"*Tracking activities from **{date_range[0]}** to **{date_range[1]}***")
 
-# Top level metrics
+# --- TOP LEVEL METRICS ---
+def display_metrics(dataframe):
+    total_km = dataframe['Distance (km)'].sum()
+    total_effort = dataframe['Effort'].sum()
+    total_runs = len(dataframe)
+    total_elevation = dataframe['Elevation (m)'].sum()
+    total_time_min = dataframe['Time (min)'].sum()
+
+    # Time formatting
+    hours = int(total_time_min // 60)
+    minutes = int(total_time_min % 60)
+    days = int(hours // 24)
+    hours = int(hours % 24)
+    time_display = f"{days}d {hours}h {minutes}m" if days > 0 else f"{hours}h {minutes}m"
+
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("Total Distance", f"{total_km:,.1f} km")
+    c2.metric("Total Effort", f"{total_effort:,.1f}")
+    c3.metric("Total Time", time_display)
+    c4.metric("Total Activities", f"{total_runs}")
+    c5.metric("Total Elevation", f"{total_elevation:,.1f} m")
+
+display_metrics(filtered_df)
+
+# --- FUN STATS ---
 total_km = filtered_df['Distance (km)'].sum()
-total_effort = filtered_df['Effort'].sum()
-total_runs = len(filtered_df)
 total_elevation = filtered_df['Elevation (m)'].sum()
 total_time_min = filtered_df['Time (min)'].sum()
 
-# Convert time to hours/minutes for display
-hours = int(total_time_min // 60)
-minutes = int(total_time_min % 60)
-days = int(hours // 24)
-hours = int(hours % 24)
-time_display = f"{days}d {hours}h {minutes}m" if days > 0 else f"{hours}h {minutes}m"
-
-c1, c2, c3, c4, c5 = st.columns(5)
-c1.metric("Total Distance", f"{total_km:,.1f} km")
-c2.metric("Total Effort", f"{total_effort:,.1f}")
-c3.metric("Total Time", time_display)
-c4.metric("Total Activities", f"{total_runs}")
-c5.metric("Total Elevation", f"{total_elevation:,.1f} m")
-
-# --- FUN STATS ---
 fun_facts = [
     # Distance
     f"**{total_km / 42.195:.1f}** Marathons worth of distance 🏃",
     f"**{total_km / 1600:.2f}x** the length of New Zealand 🇳🇿",
     f"**{(total_km / 69420) * 100:.4f}%** of the way around your mom 🤰",
-    
     # Elevation
     f"**{total_elevation / 328:.1f}** times the Auckland Sky Tower 🗼",
     f"**{total_elevation / 8848:.2f}** Mount Everests climbed 🏔️",
-    f"**{total_elevation / 8611:.2f}** K2 summits 🗻",
-    f"**{total_elevation / 408000:.4f}** times the height of the ISS 🛰️",
-    
     # Time
-    f"the time in which **{int(total_time_min * 260):,}** babies were born 👶",
     f"**{total_time_min / 480:.1f}** full 8-hour work days 💼",
-    f"**{total_time_min / 90:.1f}** complete sleep cycles 😴",
     f"**{total_time_min / 22:.1f}** episodes of Friends ☕️"
 ]
-
-selected_facts = random.sample(fun_facts, 3)
+selected_facts = random.sample(fun_facts, min(3, len(fun_facts)))
 st.info("**That's equivalent to:**\n\n" + "\n\n".join([f"• {fact}" for fact in selected_facts]))
 
 st.divider()
 
+# --- HELPER FUNCTIONS FOR STANDINGS ---
+def get_winner_history(source_df, group_cols, value_col='Effort'):
+    """
+    Calculates the winner for each month based on the provided grouping.
+    filtered_df should essentially be 'df' but with categorical filters applied (ignoring date).
+    """
+    if source_df.empty:
+        return pd.DataFrame()
 
-# --- LEADERBOARDS ---
+    # Group by Month + Target (Team or Name)
+    monthly_sums = source_df.groupby(['Month'] + group_cols)[value_col].sum().reset_index()
+    
+    heatmap_data = []
+    for month in sorted(monthly_sums['Month'].unique(), reverse=True):
+        m_data = monthly_sums[monthly_sums['Month'] == month]
+        if not m_data.empty:
+            winner = m_data.loc[m_data[value_col].idxmax()]
+            entry = {
+                'Month': month,
+                'Winner': winner[group_cols[0]] if len(group_cols) == 1 else winner[group_cols[0]], # Primary identifier
+                'Effort': winner[value_col]
+            }
+             # If grouping by Name, include Team
+            if 'Name' in group_cols:
+                entry['Team'] = winner['Team']
+            
+            heatmap_data.append(entry)
+            
+    return pd.DataFrame(heatmap_data)
+
+# Pre-calculate history mask (respects categorical filters, ignores date range)
+history_mask = (
+    (df['Team'].isin(selected_teams)) &
+    (df['Type'].isin(selected_types)) &
+    (df['Name'].isin(selected_names))
+)
+history_df_base = df[history_mask].copy()
+
+
+# --- LEADERBOARDS STRUCURE ---
 col_team, col_indiv = st.columns([1, 2])
 
+# --- TEAM STANDINGS ---
 with col_team:
     st.subheader("Team Standings")
-    team_stats = filtered_df.groupby('Team')[['Effort', 'Distance (km)']].sum().sort_values('Effort', ascending=False).reset_index()
-    
-    st.dataframe(team_stats, width="stretch", hide_index=True)
+    tab_month, tab_overall, tab_history = st.tabs(["Month", "Year", "Monthly History"])
 
-    # --- WIN PROBABILITY ---
+    with tab_month:
+        st.caption(f"Standings for {datetime.date.today().strftime('%B %Y')}")
+        month_data = filtered_df[filtered_df['Month'] == current_month]
+        
+        if not month_data.empty:
+            month_stats = month_data.groupby('Team')[['Effort', 'Distance (km)']].sum().sort_values('Effort', ascending=False).reset_index()
+            st.dataframe(month_stats, width="stretch", hide_index=True)
+            if not month_stats.empty:
+                leader = month_stats.iloc[0]
+                st.success(f"👑 Current Leader: **Team {leader['Team']}** with {leader['Effort']:.1f}")
+        else:
+            st.info("No activities found for the current month.")
+
+    with tab_overall:
+        team_stats = filtered_df.groupby('Team')[['Effort', 'Distance (km)']].sum().sort_values('Effort', ascending=False).reset_index()
+        st.dataframe(team_stats, width="stretch", hide_index=True)
+
+    with tab_history:
+        st.caption("Winners of each month")
+        history_table = get_winner_history(history_df_base, ['Team'])
+        if not history_table.empty:
+             st.dataframe(history_table, width="stretch", hide_index=True)
+        else:
+            st.info("No data available for history.")
+
+    # --- WIN PROBABILITY (Monte Carlo) ---
     st.subheader("Win Probability")
-    
-    # Calculate remaining days
     today = datetime.date.today()
     days_remaining = (COMPETITION_END_DATE - today).days
-    
+
     if days_remaining > 0:
-        # Group by Team and Date to get daily totals
+        # Prepare statistics
         daily_effort = df.groupby(['Team', 'Date'])['Effort'].sum().reset_index()
-        
-        # Reindex to include all days, including 0-effort days
         all_dates = pd.date_range(start=COMPETITION_START_DATE, end=today)
         
         team_stats_list = []
         for team in daily_effort['Team'].unique():
-            team_data = daily_effort[daily_effort['Team'] == team].set_index('Date')
-            # Reindex and fill missing days with 0
-            team_data_full = team_data.reindex(all_dates, fill_value=0)
-            
-            mean_val = team_data_full['Effort'].mean()
-            std_val = team_data_full['Effort'].std()
-            
-            team_stats_list.append({'Team': team, 'mean': mean_val, 'std': std_val})
-            
+            team_data = daily_effort[daily_effort['Team'] == team].set_index('Date').reindex(all_dates, fill_value=0)
+            team_stats_list.append({
+                'Team': team, 
+                'mean': team_data['Effort'].mean(), 
+                'std': team_data['Effort'].std()
+            })
         team_stats_daily = pd.DataFrame(team_stats_list).set_index('Team')
         
-        # Current totals
+        # Simulation
         current_totals = df.groupby('Team')['Effort'].sum()
-        
-        # Monte Carlo simulation
-        N_SIMULATIONS = 10000
         teams = current_totals.index.tolist()
-        sim_results = {team: 0 for team in teams}
+        N_SIMULATIONS = 10000
         
-        # Create a matrix of future efforts: (N_SIMULATIONS, n_teams)
-        # Total Future ~ N(mean * days, std * sqrt(days))
-        future_efforts = {} 
+        future_efforts = {}
         for team in teams:
             mu = team_stats_daily.loc[team, 'mean']
             sigma = team_stats_daily.loc[team, 'std']
-            
-            # Simulated total remaining effort
-            # Variance encompasses daily variability (process) and uncertainty in the mean itself (parameter)
-            n_history = len(all_dates)
+            # Variance calculation handles both process noise and parameter uncertainty
             sim_mu = mu * days_remaining
-            
-            # Combined variance
-            var_process = days_remaining * (sigma ** 2)
-            var_parameter = (days_remaining ** 2) * ((sigma ** 2) / n_history)
-            sim_sigma = np.sqrt(var_process + var_parameter)
-            
+            sim_sigma = np.sqrt(days_remaining * (sigma**2) + (days_remaining**2) * ((sigma**2) / len(all_dates)))
             future_efforts[team] = np.random.normal(sim_mu, sim_sigma, N_SIMULATIONS)
-
-        # Add current totals to get final simulated totals
-        final_scores = pd.DataFrame(index=range(N_SIMULATIONS))
-        for team in teams:
-            final_scores[team] = current_totals[team] + future_efforts[team]
             
-        # Determine winner for each simulation
-        winners = final_scores.idxmax(axis=1)
-        win_counts = winners.value_counts()
-        
-        # Calculate probabilities
-        win_probs = (win_counts / N_SIMULATIONS).reset_index()
+        final_scores = pd.DataFrame({team: current_totals[team] + future_efforts[team] for team in teams})
+        win_probs = (final_scores.idxmax(axis=1).value_counts() / N_SIMULATIONS).reset_index()
         win_probs.columns = ['Team', 'Probability']
         
-        # Donut chart
+        # Chart
         prob_chart = alt.Chart(win_probs).mark_arc(innerRadius=60).encode(
             theta=alt.Theta(field="Probability", type="quantitative"),
             color=alt.Color(field="Team", type="nominal"),
@@ -228,44 +266,51 @@ with col_team:
         ).properties(height=200)
         
         st.altair_chart(prob_chart, use_container_width=True)
-        st.caption(f"10k simulations of the remaining {days_remaining} days. Accounts for current scores, daily consistency, and performance uncertainty.")
-        
-        # Display mu and sigma for each team
-        stats_subtext = " | ".join([f"**{team}**: μ={row['mean']:.2f}, σ={row['std']:.2f}" for team, row in team_stats_daily.iterrows()])
-        st.caption(f"Daily Effort: {stats_subtext}")
-        
+        st.caption(f"10k simulations over {days_remaining} remaining days.")
     else:
         st.info("Competition has ended.")
 
+
+# --- INDIVIDUAL STANDINGS ---
 with col_indiv:
     st.subheader("Individual Standings")
-    indiv_stats = filtered_df.groupby(['Name', 'Team'])[['Effort', 'Distance (km)', 'Time (min)']].sum().reset_index()
-    indiv_stats = indiv_stats.sort_values('Effort', ascending=False).reset_index(drop=True)
-    indiv_stats.index += 1  # Start ranking at 1
+    indiv_tab_month, indiv_tab_year, indiv_tab_history = st.tabs(["Month", "Year", "Monthly History"])
     
-    st.dataframe(
-        indiv_stats.style.format({
-            "Effort": "{:.1f}", 
-            "Distance (km)": "{:.1f}",
-            "Time (min)": "{:.0f}"
-        }),
-        width="stretch"
-    )
+    with indiv_tab_month:
+        st.caption(f"Standings for {datetime.date.today().strftime('%B %Y')}")
+        month_data_indiv = filtered_df[filtered_df['Month'] == current_month]
+        
+        if not month_data_indiv.empty:
+            stats = month_data_indiv.groupby(['Name', 'Team'])[['Effort', 'Distance (km)', 'Time (min)']].sum().reset_index()
+            stats = stats.sort_values('Effort', ascending=False).reset_index(drop=True)
+            stats.index += 1
+            st.dataframe(stats.style.format({"Effort": "{:.1f}", "Distance (km)": "{:.1f}", "Time (min)": "{:.0f}"}), width="stretch")
+        else:
+            st.info("No activities found for the current month.")
+
+    with indiv_tab_year:
+        stats = filtered_df.groupby(['Name', 'Team'])[['Effort', 'Distance (km)', 'Time (min)']].sum().reset_index()
+        stats = stats.sort_values('Effort', ascending=False).reset_index(drop=True)
+        stats.index += 1
+        st.dataframe(stats.style.format({"Effort": "{:.1f}", "Distance (km)": "{:.1f}", "Time (min)": "{:.0f}"}), width="stretch")
+    
+    with indiv_tab_history:
+        st.caption("Winners of each month")
+        history_table_indiv = get_winner_history(history_df_base, ['Name', 'Team'])
+        if not history_table_indiv.empty:
+            st.dataframe(history_table_indiv, width="stretch", hide_index=True)
+        else:
+            st.info("No data available for history.")
 
 st.divider()
 
-
-# --- CHARTS ---
+# --- ACTIVITY HEATMAP ---
 st.subheader("Activity Heatmap")
-
-# Prepare data for heatmap
 heatmap_df = filtered_df.copy()
-heatmap_df['Year'] = heatmap_df['Date'].dt.year
+# Add date parts for Altair
 heatmap_df['Week'] = heatmap_df['Date'].dt.isocalendar().week
 heatmap_df['Day'] = heatmap_df['Date'].dt.day_name()
-heatmap_df['DayNum'] = heatmap_df['Date'].dt.dayofweek # 0=Mon, 6=Sun
 
-# Group by date to get daily totals for tooltips
 daily_summary = heatmap_df.groupby('Date').agg({
     'Effort': 'sum',
     'Distance (km)': 'sum',
@@ -273,12 +318,10 @@ daily_summary = heatmap_df.groupby('Date').agg({
     'Type': lambda x: ', '.join(sorted(x.unique()))
 }).reset_index()
 
-daily_summary['Year'] = daily_summary['Date'].dt.year
+# Re-add date parts to summary for plotting
 daily_summary['Week'] = daily_summary['Date'].dt.isocalendar().week
 daily_summary['Day'] = daily_summary['Date'].dt.day_name()
-daily_summary['DayNum'] = daily_summary['Date'].dt.dayofweek
 
-# Create the heatmap
 heatmap = alt.Chart(daily_summary).mark_rect().encode(
     x=alt.X('Week:O', title='Week of Year'),
     y=alt.Y('Day:N', sort=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], title='Day of Week'),
@@ -290,22 +333,15 @@ heatmap = alt.Chart(daily_summary).mark_rect().encode(
         alt.Tooltip('Name:N', title='People'),
         alt.Tooltip('Type:N', title='Activities')
     ]
-).properties(
-    height=250
-).configure_axis(
-    labelFontSize=10,
-    titleFontSize=12
-)
+).properties(height=250).configure_axis(labelFontSize=10, titleFontSize=12)
 
 st.altair_chart(heatmap, use_container_width=True)
 
+# --- EFFORT TRENDS ---
 st.subheader("Effort Over Time")
-
-# Create cumulative sum for Effort
 chart_df = filtered_df.sort_values('Date')
 chart_df['Cumulative Effort'] = chart_df.groupby('Name')['Effort'].cumsum()
 
-# Altair Line Chart
 line_chart = alt.Chart(chart_df).mark_line(point=True).encode(
     x='Date:T',
     y='Cumulative Effort:Q',
@@ -315,12 +351,9 @@ line_chart = alt.Chart(chart_df).mark_line(point=True).encode(
 
 st.altair_chart(line_chart, width="stretch")
 
-
 # --- RECENT ACTIVITY FEED ---
 st.subheader("Recent Activities")
 recent_df = filtered_df.sort_values('Date', ascending=False).head(15)
-
-# Select and rename columns for display
 display_cols = ['Date', 'Name', 'Team', 'Type', 'Distance (km)', 'Effort', 'Pace (min/km)']
 st.dataframe(
     recent_df[display_cols].style.format({
