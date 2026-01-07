@@ -203,7 +203,7 @@ with col_team:
             st.dataframe(month_stats, width="stretch", hide_index=True)
             if not month_stats.empty:
                 leader = month_stats.iloc[0]
-                st.success(f"👑 Current Leader: **Team {leader['Team']}** with {leader['Effort']:.1f}")
+                st.success(f"Current Leader: **Team {leader['Team']}** with {leader['Effort']:.1f}")
         else:
             st.info("No activities found for the current month.")
 
