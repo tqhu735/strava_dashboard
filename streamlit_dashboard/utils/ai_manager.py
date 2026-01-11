@@ -76,7 +76,7 @@ def generate_ai_content(summary):
     if not client:
         return {}
 
-    prompt = f"{SYSTEM_PROMPT}\n\nData Summary:\n{summary}\n\nTasks:\n1. 3 slightly unhinged/funny facts\n2. One savage insight roasting the group"
+    prompt = f"{SYSTEM_PROMPT}\n\nData Summary:\n{summary}\n\nTasks:\n1. 3 slightly unhinged, funny, but still insightful facts\n2. One savage insight roasting the group"
 
     for model_name in MODELS_TO_TRY:
         try:

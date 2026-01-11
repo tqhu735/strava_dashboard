@@ -40,8 +40,8 @@ def get_data_summary(dataframe):
     total_time_min = dataframe['Time (min)'].sum()
     
     indiv_stats = dataframe.groupby('Name')['Effort'].sum().sort_values(ascending=False)
-    top_performers = indiv_stats.head(3).to_dict()
-    bottom_performers = indiv_stats.tail(3).to_dict()
+    top_performers = indiv_stats.head(5).to_dict()
+    bottom_performers = indiv_stats.tail(5).to_dict()
     
     recent_names = dataframe.sort_values('Date', ascending=False).head(5)['Name'].unique().tolist()
     
@@ -52,8 +52,8 @@ Overall Stats:
 - Total Elevation: {total_elevation:.0f} m
 - Total Time: {total_time_min:.0f} mins
 
-Leaderboard (Top 3): {top_performers}
-Leaderboard (Bottom 3): {bottom_performers}
+Leaderboard (Top 5): {top_performers}
+Leaderboard (Bottom 5): {bottom_performers}
 Recently Active: {', '.join(recent_names)}
 """
 
