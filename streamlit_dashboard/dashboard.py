@@ -190,6 +190,8 @@ if len(date_range) == 2:
 
 display_metrics(filtered_df)
 render_goal_progress(filtered_df)
+st.divider()
+
 
 # Reserve space for AI section (rendered last to avoid blocking)
 ai_placeholder = st.empty()
