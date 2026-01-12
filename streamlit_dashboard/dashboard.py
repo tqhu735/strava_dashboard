@@ -18,6 +18,7 @@ COMPETITION_START_DATE = datetime.date(2026, 1, 1)
 COMPETITION_END_DATE = datetime.date(2026, 12, 31)
 N_SIMULATIONS = 10000
 DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+GROUP_DISTANCE_GOAL = 10000
 
 st.set_page_config(page_title="Sleep Comp Fitness Challenge", page_icon="🏃", layout="wide")
 
@@ -40,6 +41,32 @@ def display_metrics(data: pd.DataFrame) -> None:
     cols[2].metric("Total Time", time_str)
     cols[3].metric("Total Activities", f"{len(data)}")
     cols[4].metric("Total Elevation", f"{int(total_elevation)} m")
+
+
+def render_goal_progress(data: pd.DataFrame) -> None:
+    """Render a progress bar for the group distance goal with predictions."""
+    total_distance = data['Distance (km)'].sum()
+    progress = min(1.0, total_distance / GROUP_DISTANCE_GOAL)
+    
+    # Calculate prediction based on daily average
+    days_elapsed = (TODAY - COMPETITION_START_DATE).days
+    if days_elapsed > 0:
+        predicted_total = (total_distance / days_elapsed) * 365
+    else:
+        predicted_total = 0
+
+    st.subheader("Group Goal Progress")
+    
+    # Custom progress bar with metric labels
+    st.progress(progress)
+    
+    c1, c2 = st.columns(2)
+    # c1.metric("Current Distance", f"{total_distance:,.1f} km")
+    c1.metric("Goal", f"{total_distance:,.1f}/{GROUP_DISTANCE_GOAL:,.0f} km")
+    c2.metric("Projected Total", f"{predicted_total:,.1f} km", 
+            delta=f"{predicted_total - GROUP_DISTANCE_GOAL:,.1f} km",
+            help="Prediction based on current daily average extrapolated to 365 days.")
+
 
 
 def get_winner_history(source_df: pd.DataFrame, group_cols: list, value_col: str = 'Effort') -> pd.DataFrame:
@@ -162,6 +189,7 @@ if len(date_range) == 2:
     st.markdown(f"*Tracking activities from **{date_range[0]}** to **{date_range[1]}***")
 
 display_metrics(filtered_df)
+render_goal_progress(filtered_df)
 
 # Reserve space for AI section (rendered last to avoid blocking)
 ai_placeholder = st.empty()
