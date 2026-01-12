@@ -61,7 +61,6 @@ def render_goal_progress(data: pd.DataFrame) -> None:
     st.progress(progress)
     
     c1, c2 = st.columns(2)
-    # c1.metric("Current Distance", f"{total_distance:,.1f} km")
     c1.metric("Goal", f"{total_distance:,.1f}/{GROUP_DISTANCE_GOAL:,.0f} km")
     c2.metric("Projected Total", f"{predicted_total:,.1f} km", 
             delta=f"{predicted_total - GROUP_DISTANCE_GOAL:,.1f} km",
