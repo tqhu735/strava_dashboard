@@ -49,7 +49,7 @@ def render_goal_progress(data: pd.DataFrame) -> None:
     progress = min(1.0, total_distance / GROUP_DISTANCE_GOAL)
     
     # Calculate prediction based on daily average
-    days_elapsed = (TODAY - COMPETITION_START_DATE).days
+    days_elapsed = (TODAY - COMPETITION_START_DATE).days + 1
     if days_elapsed > 0:
         predicted_total = (total_distance / days_elapsed) * 365
     else:
