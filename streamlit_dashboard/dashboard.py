@@ -187,6 +187,7 @@ history_df = df[categorical_mask].copy()
 st.title("Sleep Comp Fitness Challenge")
 if len(date_range) == 2:
     st.markdown(f"*Tracking activities from **{date_range[0]}** to **{date_range[1]}***")
+st.divider()
 
 display_metrics(filtered_df)
 render_goal_progress(filtered_df)
@@ -323,6 +324,7 @@ line_chart = alt.Chart(chart_df).mark_line(point=True).encode(
 )
 
 st.altair_chart(line_chart, width='stretch')
+st.divider()
 
 
 # --- Activity Feed ---
