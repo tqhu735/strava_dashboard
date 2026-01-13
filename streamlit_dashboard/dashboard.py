@@ -67,7 +67,6 @@ def render_goal_progress(data: pd.DataFrame) -> None:
             help="Prediction based on current daily average extrapolated to 365 days.")
 
 
-
 def get_winner_history(source_df: pd.DataFrame, group_cols: list, value_col: str = 'Effort') -> pd.DataFrame:
     """Calculate the winner for each month based on the provided grouping."""
     if source_df.empty:
