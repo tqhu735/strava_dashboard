@@ -4,13 +4,13 @@ This repository contains the code for the 2026 Sleep Comp fitness competition. I
 
 ## Architecture
 
-1. Google Apps Script (apps_script/)
+1. Google Apps Script (`apps_script/`)
    - Fetches activity data from the Strava Club API.
    - Stores data in a Google Sheet.
    - Sends notifications to fitness-comp via a Discord webhook.
    - Runs on a time-based trigger (hourly, as defined in Apps Script).
 
-2. Streamlit Dashboard (streamlit_dashboard/)
+2. Streamlit Dashboard (`streamlit_dashboard/`)
    - Reads the data from the Google Sheet (published as CSV).
    - Displays leaderboards, team standings, and progress charts.
    - Calculates win probabilities using Monte Carlo simulations.
@@ -24,11 +24,11 @@ This repository contains the code for the 2026 Sleep Comp fitness competition. I
 2. Copy the files from `apps_script/` into the project.
 3. Add the OAuth2 library for Google Apps Script.
 4. Set the following Script Properties (Project Settings > Script Properties):
-   - CLIENT_ID: Strava Client ID.
-   - CLIENT_SECRET: Strava Client Secret.
-   - CLUB_ID: Strava Club ID.
-   - DISCORD_WEBHOOK_URL: Discord webhook URL.
-5. Set up a time-driven trigger to run 'fetchClubActivities' hourly.
+   - `CLIENT_ID`: Strava Client ID.
+   - `CLIENT_SECRET`: Strava Client Secret.
+   - `CLUB_ID`: Strava Club ID.
+   - `DISCORD_WEBHOOK_URL`: Discord webhook URL.
+5. Set up a time-driven trigger to run `fetchClubActivities` hourly.
 
 ### Streamlit Dashboard
 
@@ -36,7 +36,7 @@ This repository contains the code for the 2026 Sleep Comp fitness competition. I
 2. Install dependencies:
    `pip install -r requirements.txt`
 
-3. Set up environment variables or a '.streamlit/secrets.toml' file with your API keys:
+3. Set up environment variables or a `.streamlit/secrets.toml` file with your API keys:
    `GEMINI_API_KEY = "your_google_ai_studio_key"`
 
 4. Run the dashboard locally:
