@@ -5,3 +5,4 @@ __pycache__/
 .streamlit/secrets.toml
 *.toml
 .env.example
+.DS_Store
