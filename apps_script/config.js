@@ -21,7 +21,7 @@ const MULTIPLIERS = {
   'Run': 1.0,
   'Swim': 4.0,
   'Walk': 0.2,
-  'Workout': 0.5
+  'Workout': 0.3
 };
 
 const DISCORD_COLOR = 15548997; // Strava-esque Orange/Red
