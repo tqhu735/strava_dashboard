@@ -10,7 +10,7 @@ const CLUB_ID = props.getProperty('CLUB_ID');
 const DISCORD_WEBHOOK_URL = props.getProperty('DISCORD_WEBHOOK_URL');
 
 const TEAMS = {
-  'Srikar': ['Srikar', 'Wilco', 'Trisan', 'Jared', 'Raymond', "Minnie", "Grace"],
+  'Srikar': ['Srikar', 'Wilco', 'Trisan', 'Jared', 'Raymond', "Minnie", "Grace", "Chaomin"],
   'Ravi': ['Ravi', 'Andy', 'Scott', 'Ben', 'Tommy']
 };
 
