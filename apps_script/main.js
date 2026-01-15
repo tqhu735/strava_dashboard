@@ -75,9 +75,18 @@ function sendDiscordNotification(newActivities) {
         return;
     }
 
-    const { athleteStats, teamStats } = calculateStats();
+    const filteredActivities = newActivities.filter(act => {
+        const dist = act[4];
+        const type = act[9];
+        return type !== 'Walk' || dist > 1.0;
+    });
 
-    const embeds = newActivities.map(act => {
+    if (filteredActivities.length === 0) {
+        Logger.log('No qualifying activities for Discord notification.');
+        return;
+    }
+
+    const embeds = filteredActivities.map(act => {
         const [id, name, team, date, dist, effDist, duration, pace, elevation, type] = act;
         const multiplier = MULTIPLIERS[type] || 0.0;
 
@@ -100,7 +109,7 @@ function sendDiscordNotification(newActivities) {
     for (let i = 0; i < embeds.length; i += 10) {
         const chunk = embeds.slice(i, i + 10);
         const payload = {
-            content: embeds.length > 10 ? `Batch update: ${newActivities.length} new activities!` : null,
+            content: embeds.length > 10 ? `Batch update: ${filteredActivities.length} new activities!` : null,
             embeds: chunk
         };
 
