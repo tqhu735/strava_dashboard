@@ -243,13 +243,12 @@ ai_placeholder = st.empty()
 st.divider()
 
 
-# --- Leaderboards ---
-col_team, col_indiv = st.columns([1, 2])
+# --- Team Section ---
+col_team_stats, col_win_prob, col_team_trend = st.columns(3)
 
-with col_team:
-    # TODO: Add plot of team scores over time
+with col_team_stats:
     st.subheader("Team Standings")
-    tab_month, tab_year, tab_history = st.tabs(["Month", "Year", "Monthly History"])
+    tab_month, tab_year, tab_history = st.tabs(["Month", "Year", "History"])
 
     with tab_month:
         st.caption(f"Standings for {TODAY.strftime('%B %Y')}")
@@ -282,7 +281,7 @@ with col_team:
         else:
             st.info("No data available for history.")
 
-    # Win Probability (Monte Carlo)
+with col_win_prob:
     st.subheader("Win Probability")
     days_remaining = (COMPETITION_END_DATE - TODAY).days
 
@@ -295,14 +294,14 @@ with col_team:
 
         prob_chart = (
             alt.Chart(win_probs)
-            .mark_arc(innerRadius=60)
+            .mark_arc(innerRadius=70)
             .encode(
                 theta=alt.Theta(field="Probability", type="quantitative"),
                 color=alt.Color(field="Team", type="nominal"),
                 tooltip=["Team", alt.Tooltip("Probability", format=".1%")],
                 order=alt.Order("Probability", sort="descending"),
             )
-            .properties(height=200)
+            .properties(height=230)
         )
 
         st.altair_chart(prob_chart, width="stretch")
@@ -310,39 +309,46 @@ with col_team:
     else:
         st.info("Competition has ended.")
 
-with col_indiv:
-    st.subheader("Individual Standings")
-    indiv_tab_month, indiv_tab_year, indiv_tab_history = st.tabs(
-        ["Month", "Year", "Monthly History"]
+with col_team_trend:
+    st.subheader("Team Effort Trend")
+    team_daily = filtered_df.groupby(["Team", "Date"])["Effort"].sum().reset_index()
+    team_daily = team_daily.sort_values("Date")
+    team_daily["Cumulative Effort"] = team_daily.groupby("Team")["Effort"].cumsum()
+
+    team_line_chart = (
+        alt.Chart(team_daily)
+        .mark_line(point=True)
+        .encode(
+            x=alt.X("Date:T", title=None),
+            y=alt.Y("Cumulative Effort:Q", title="Effort"),
+            color=alt.Color("Team:N", legend=None),
+            tooltip=["Date", "Team", "Cumulative Effort"],
+        )
+        .properties(height=230)
     )
+    st.altair_chart(team_line_chart, width="stretch")
 
-    indiv_format = {
-        "Effort": "{:.1f}",
-        "Distance (km)": "{:.1f}",
-        "Time (min)": "{:.0f}",
-    }
+st.divider()
 
-    with indiv_tab_month:
-        st.caption(f"Standings for {TODAY.strftime('%B %Y')}")
-        month_data_indiv = filtered_df[filtered_df["Month"] == CURRENT_MONTH]
-        if not month_data_indiv.empty:
-            stats = (
-                month_data_indiv.groupby(["Name", "Team"])[
-                    ["Effort", "Distance (km)", "Time (min)"]
-                ]
-                .sum()
-                .reset_index()
-                .sort_values("Effort", ascending=False)
-                .reset_index(drop=True)
-            )
-            stats.index += 1
-            st.dataframe(stats.style.format(indiv_format), width="stretch")
-        else:
-            st.info("No activities for the current month.")
 
-    with indiv_tab_year:
+# --- Individual Section ---
+st.subheader("Individual Standings")
+indiv_tab_month, indiv_tab_year, indiv_tab_history = st.tabs(
+    ["Month", "Year", "History"]
+)
+
+indiv_format = {
+    "Effort": "{:.1f}",
+    "Distance (km)": "{:.1f}",
+    "Time (min)": "{:.0f}",
+}
+
+with indiv_tab_month:
+    st.caption(f"Standings for {TODAY.strftime('%B %Y')}")
+    month_data_indiv = filtered_df[filtered_df["Month"] == CURRENT_MONTH]
+    if not month_data_indiv.empty:
         stats = (
-            filtered_df.groupby(["Name", "Team"])[
+            month_data_indiv.groupby(["Name", "Team"])[
                 ["Effort", "Distance (km)", "Time (min)"]
             ]
             .sum()
@@ -352,14 +358,27 @@ with col_indiv:
         )
         stats.index += 1
         st.dataframe(stats.style.format(indiv_format), width="stretch")
+    else:
+        st.info("No activities for the current month.")
 
-    with indiv_tab_history:
-        st.caption("Winners of each month")
-        history_table_indiv = get_winner_history(history_df, ["Name", "Team"])
-        if not history_table_indiv.empty:
-            st.dataframe(history_table_indiv, width="stretch", hide_index=True)
-        else:
-            st.info("No data available for history.")
+with indiv_tab_year:
+    stats = (
+        filtered_df.groupby(["Name", "Team"])[["Effort", "Distance (km)", "Time (min)"]]
+        .sum()
+        .reset_index()
+        .sort_values("Effort", ascending=False)
+        .reset_index(drop=True)
+    )
+    stats.index += 1
+    st.dataframe(stats.style.format(indiv_format), width="stretch")
+
+with indiv_tab_history:
+    st.caption("Winners of each month")
+    history_table_indiv = get_winner_history(history_df, ["Name", "Team"])
+    if not history_table_indiv.empty:
+        st.dataframe(history_table_indiv, width="stretch", hide_index=True)
+    else:
+        st.info("No data available for history.")
 
 st.divider()
 
@@ -403,6 +422,7 @@ heatmap = (
 )
 
 st.altair_chart(heatmap, width="stretch")
+st.divider()
 
 
 # --- Effort Trends ---
