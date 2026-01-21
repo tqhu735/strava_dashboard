@@ -167,6 +167,131 @@ def render_standings_table(
         st.dataframe(data, width="stretch", hide_index=True)
 
 
+def render_h2h_comparison(data: pd.DataFrame) -> None:
+    """Render a head-to-head comparison between two competitors."""
+    st.subheader("Head-to-Head Comparison")
+
+    names = sorted(data["Name"].unique())
+    if len(names) < 2:
+        st.info("Select at least two competitors to see a comparison.")
+        return
+
+    # User Selection
+    c1, c2 = st.columns(2)
+    with c1:
+        player1 = st.selectbox("Compare competitor...", names, index=0, key="h2h_p1")
+    with c2:
+        player2 = st.selectbox(
+            "...with competitor", names, index=1 if len(names) > 1 else 0, key="h2h_p2"
+        )
+
+    if player1 == player2:
+        st.warning("Please select two different people to compare.")
+        return
+
+    p1_data = data[data["Name"] == player1]
+    p2_data = data[data["Name"] == player2]
+
+    # Helper for time formatting
+    def format_time(mins):
+        h, m = divmod(int(mins), 60)
+        return f"{h}h {m}m"
+
+    stats_to_compare = [
+        ("Effort", "Effort", "{:,.1f}"),
+        ("Distance", "Distance (km)", "{:,.1f} km"),
+        ("Activities", "Name", "{}"),
+        ("Elevation", "Elevation (m)", "{:,.0f} m"),
+        ("Total Time", "Time (min)", "time"),
+    ]
+
+    # Visual Layout
+    st.write("")
+
+    # Avatar and Name Headers
+    h1, h_vs, h2 = st.columns([2, 1, 2])
+
+    # with h1:
+    #     # Placeholder for profile picture - keeping space for future JPGs
+    #     st.markdown(
+    #         f"""
+    #         <div style="text-align: center;">
+    #             <div style="font-size: 60px; margin-bottom: 10px; background-color: #f0f2f6; border-radius: 50%; width: 100px; height: 100px; line-height: 100px; margin-left: auto; margin-right: auto;">👤</div>
+    #             <h2 style="margin-top: 10px;">{player1}</h2>
+    #         </div>
+    #         """,
+    #         unsafe_allow_html=True,
+    #     )
+
+    # with h_vs:
+    #     st.markdown(
+    #         """
+    #         <div style="text-align: center; height: 100px; display: flex; align-items: center; justify-content: center;">
+    #             <h1 style="color: #ff4b4b; opacity: 0.8; margin-top: 30px;">VS</h1>
+    #         </div>
+    #         """,
+    #         unsafe_allow_html=True,
+    #     )
+
+    # with h2:
+    #     # Placeholder for profile picture - keeping space for future JPGs
+    #     st.markdown(
+    #         f"""
+    #         <div style="text-align: center;">
+    #             <div style="font-size: 60px; margin-bottom: 10px; background-color: #f0f2f6; border-radius: 50%; width: 100px; height: 100px; line-height: 100px; margin-left: auto; margin-right: auto;">👤</div>
+    #             <h2 style="margin-top: 10px;">{player2}</h2>
+    #         </div>
+    #         """,
+    #         unsafe_allow_html=True,
+    #     )
+
+    # Comparative Metrics
+    for label, col, fmt in stats_to_compare:
+        if label == "Activities":
+            v1, v2 = len(p1_data), len(p2_data)
+        else:
+            v1, v2 = p1_data[col].sum(), p2_data[col].sum()
+
+        r1, r_lbl, r2 = st.columns([2, 1, 2])
+
+        with r_lbl:
+            st.markdown(
+                f"<div style='text-align: center; font-weight: bold; color: #888; margin-top: 12px; font-size: 0.8rem;'>{label.upper()}</div>",
+                unsafe_allow_html=True,
+            )
+
+        def get_stat_html(val, delta, fmt, is_time=False):
+            color = "#00c853" if delta > 0 else ("#ff3d00" if delta < 0 else "#747474")
+            arrow = "↑" if delta > 0 else ("↓" if delta < 0 else "")
+
+            if is_time:
+                val_str = format_time(val)
+                delta_str = f"{arrow} {format_time(abs(delta))}" if delta != 0 else ""
+            else:
+                val_str = fmt.format(val)
+                # For non-time, we use the same formula to show delta
+                delta_str = f"{arrow} {abs(delta):,.1f}" if delta != 0 else ""
+
+            return f"""
+                <div style="text-align: center; padding: 0;">
+                    <div style="font-size: 22px; font-weight: 700; color: #1f1f1f; line-height: 1.2;">{val_str}</div>
+                    <div style="font-size: 13px; font-weight: 500; color: {color}; margin-top: -2px;">{delta_str}</div>
+                </div>
+            """
+
+        with r1:
+            st.markdown(
+                get_stat_html(v1, v1 - v2, fmt, is_time=(fmt == "time")),
+                unsafe_allow_html=True,
+            )
+
+        with r2:
+            st.markdown(
+                get_stat_html(v2, v2 - v1, fmt, is_time=(fmt == "time")),
+                unsafe_allow_html=True,
+            )
+
+
 # --- Data Loading ---
 df = load_data()
 if df.empty:
@@ -422,6 +547,11 @@ line_chart = (
 )
 
 st.altair_chart(line_chart, width="stretch")
+st.divider()
+
+
+# --- Head-to-Head ---
+render_h2h_comparison(filtered_df)
 st.divider()
 
 
