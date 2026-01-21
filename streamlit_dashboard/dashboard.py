@@ -294,7 +294,7 @@ with col_win_prob:
 
         prob_chart = (
             alt.Chart(win_probs)
-            .mark_arc(innerRadius=70)
+            .mark_arc(innerRadius=60)
             .encode(
                 theta=alt.Theta(field="Probability", type="quantitative"),
                 color=alt.Color(field="Team", type="nominal"),
