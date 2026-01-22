@@ -284,7 +284,7 @@ st.divider()
 
 
 # --- Team Section ---
-st.header("Team Statistics")
+st.header("Team")
 col_team_stats, col_win_prob = st.columns(2)
 
 with col_team_stats:
@@ -372,7 +372,7 @@ st.divider()
 
 
 # --- Individual Section ---
-st.header("Individual Statistics")
+st.header("Individual")
 
 st.subheader("Standings")
 indiv_tab_month, indiv_tab_year, indiv_tab_history = st.tabs(
