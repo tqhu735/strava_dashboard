@@ -453,14 +453,16 @@ DISPLAY_COLS = [
     "Team",
     "Type",
     "Distance (km)",
-    "Effort",
+    "Time (min)",
     "Pace (min/km)",
+    "Effort",
 ]
 ACTIVITY_FORMAT = {
     "Date": lambda t: t.strftime("%Y-%m-%d"),
     "Distance (km)": "{:.2f}",
-    "Effort": "{:.2f}",
+    "Time (min)": "{:.2f}",
     "Pace (min/km)": "{:.2f}",
+    "Effort": "{:.2f}",
 }
 st.dataframe(
     filtered_df.sort_values("Date", ascending=False)[DISPLAY_COLS].style.format(
