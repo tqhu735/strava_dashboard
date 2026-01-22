@@ -44,7 +44,7 @@ def display_metrics(data: pd.DataFrame) -> None:
 
     hours, minutes = divmod(int(total_time_min), 60)
     days, hours = divmod(hours, 24)
-    time_str = f"{days}d {hours}h {minutes}m" if days > 0 else f"{hours}h {minutes}m"
+    time_str = f"{days}d {hours}h" if days > 0 else f"{hours}h {minutes}m"
 
     cols = st.columns(5)
     cols[0].metric("Total Distance", f"{total_km:,.1f} km")
@@ -66,7 +66,7 @@ def render_goal_progress(data: pd.DataFrame) -> None:
     else:
         predicted_total = 0
 
-    st.subheader("Group Goal Progress")
+    st.subheader("Goal Progress")
 
     # Custom progress bar with metric labels
     st.progress(progress)
@@ -234,20 +234,61 @@ if len(date_range) == 2:
 
 display_metrics(filtered_df)
 st.divider()
-render_goal_progress(filtered_df)
-st.divider()
-
 
 # Reserve space for AI section (rendered last to avoid blocking)
 ai_placeholder = st.empty()
 st.divider()
 
+st.header("Group")
+st.subheader("Activity Heatmap")
+daily_summary = (
+    filtered_df.groupby("Date")
+    .agg(
+        {
+            "Effort": "sum",
+            "Distance (km)": "sum",
+            "Name": lambda x: ", ".join(sorted(x.unique())),
+            "Type": lambda x: ", ".join(sorted(x.unique())),
+        }
+    )
+    .reset_index()
+)
+daily_summary["Week"] = daily_summary["Date"].dt.isocalendar().week
+daily_summary["Day"] = daily_summary["Date"].dt.day_name()
+
+heatmap = (
+    alt.Chart(daily_summary)
+    .mark_rect()
+    .encode(
+        x=alt.X("Week:O", title="Week of Year"),
+        y=alt.Y("Day:N", sort=DAYS_OF_WEEK, title="Day of Week"),
+        color=alt.Color(
+            "Effort:Q", title="Daily Effort", scale=alt.Scale(scheme="greens")
+        ),
+        tooltip=[
+            alt.Tooltip("Date:T", format="%Y-%m-%d"),
+            alt.Tooltip("Effort:Q", format=".1f", title="Total Effort"),
+            alt.Tooltip("Distance (km):Q", format=".1f", title="Total Km"),
+            alt.Tooltip("Name:N", title="People"),
+            alt.Tooltip("Type:N", title="Activities"),
+        ],
+    )
+    .properties(height=250)
+    .configure_axis(labelFontSize=10, titleFontSize=12)
+)
+
+st.altair_chart(heatmap, width="stretch")
+
+render_goal_progress(filtered_df)
+st.divider()
+
 
 # --- Team Section ---
-col_team_stats, col_win_prob, col_team_trend = st.columns(3)
+st.header("Team Statistics")
+col_team_stats, col_win_prob = st.columns(2)
 
 with col_team_stats:
-    st.subheader("Team Standings")
+    st.subheader("Standings")
     tab_month, tab_year, tab_history = st.tabs(["Month", "Year", "History"])
 
     with tab_month:
@@ -297,7 +338,7 @@ with col_win_prob:
             .mark_arc(innerRadius=60)
             .encode(
                 theta=alt.Theta(field="Probability", type="quantitative"),
-                color=alt.Color(field="Team", type="nominal"),
+                color=alt.Color(field="Team"),
                 tooltip=["Team", alt.Tooltip("Probability", format=".1%")],
                 order=alt.Order("Probability", sort="descending"),
             )
@@ -309,30 +350,31 @@ with col_win_prob:
     else:
         st.info("Competition has ended.")
 
-with col_team_trend:
-    st.subheader("Team Effort Trend")
-    team_daily = filtered_df.groupby(["Team", "Date"])["Effort"].sum().reset_index()
-    team_daily = team_daily.sort_values("Date")
-    team_daily["Cumulative Effort"] = team_daily.groupby("Team")["Effort"].cumsum()
+st.subheader("Effort")
+team_daily = filtered_df.groupby(["Team", "Date"])["Effort"].sum().reset_index()
+team_daily = team_daily.sort_values("Date")
+team_daily["Cumulative Effort"] = team_daily.groupby("Team")["Effort"].cumsum()
 
-    team_line_chart = (
-        alt.Chart(team_daily)
-        .mark_line(point=True)
-        .encode(
-            x=alt.X("Date:T", title=None),
-            y=alt.Y("Cumulative Effort:Q", title="Effort"),
-            color=alt.Color("Team:N", legend=None),
-            tooltip=["Date", "Team", "Cumulative Effort"],
-        )
-        .properties(height=230)
+team_line_chart = (
+    alt.Chart(team_daily)
+    .mark_line(point=True)
+    .encode(
+        x=alt.X("Date:T", title=None),
+        y=alt.Y("Cumulative Effort:Q", title="Effort"),
+        color=alt.Color("Team:N"),
+        tooltip=["Date", "Team", "Cumulative Effort"],
     )
-    st.altair_chart(team_line_chart, width="stretch")
+    .properties(height=230)
+)
+st.altair_chart(team_line_chart, width="stretch")
 
 st.divider()
 
 
 # --- Individual Section ---
-st.subheader("Individual Standings")
+st.header("Individual Statistics")
+
+st.subheader("Standings")
 indiv_tab_month, indiv_tab_year, indiv_tab_history = st.tabs(
     ["Month", "Year", "History"]
 )
@@ -348,7 +390,7 @@ with indiv_tab_month:
     month_data_indiv = filtered_df[filtered_df["Month"] == CURRENT_MONTH]
     if not month_data_indiv.empty:
         stats = (
-            month_data_indiv.groupby(["Name", "Team"])[
+            month_data_indiv.groupby(["Name"])[
                 ["Effort", "Distance (km)", "Time (min)"]
             ]
             .sum()
@@ -363,7 +405,7 @@ with indiv_tab_month:
 
 with indiv_tab_year:
     stats = (
-        filtered_df.groupby(["Name", "Team"])[["Effort", "Distance (km)", "Time (min)"]]
+        filtered_df.groupby(["Name"])[["Effort", "Distance (km)", "Time (min)"]]
         .sum()
         .reset_index()
         .sort_values("Effort", ascending=False)
@@ -380,53 +422,7 @@ with indiv_tab_history:
     else:
         st.info("No data available for history.")
 
-st.divider()
-
-
-# --- Activity Heatmap ---
-st.subheader("Activity Heatmap")
-daily_summary = (
-    filtered_df.groupby("Date")
-    .agg(
-        {
-            "Effort": "sum",
-            "Distance (km)": "sum",
-            "Name": lambda x: ", ".join(sorted(x.unique())),
-            "Type": lambda x: ", ".join(sorted(x.unique())),
-        }
-    )
-    .reset_index()
-)
-daily_summary["Week"] = daily_summary["Date"].dt.isocalendar().week
-daily_summary["Day"] = daily_summary["Date"].dt.day_name()
-
-heatmap = (
-    alt.Chart(daily_summary)
-    .mark_rect()
-    .encode(
-        x=alt.X("Week:O", title="Week of Year"),
-        y=alt.Y("Day:N", sort=DAYS_OF_WEEK, title="Day of Week"),
-        color=alt.Color(
-            "Effort:Q", title="Daily Effort", scale=alt.Scale(scheme="greens")
-        ),
-        tooltip=[
-            alt.Tooltip("Date:T", format="%Y-%m-%d"),
-            alt.Tooltip("Effort:Q", format=".1f", title="Total Effort"),
-            alt.Tooltip("Distance (km):Q", format=".1f", title="Total Km"),
-            alt.Tooltip("Name:N", title="People"),
-            alt.Tooltip("Type:N", title="Activities"),
-        ],
-    )
-    .properties(height=250)
-    .configure_axis(labelFontSize=10, titleFontSize=12)
-)
-
-st.altair_chart(heatmap, width="stretch")
-st.divider()
-
-
-# --- Effort Trends ---
-st.subheader("Effort Over Time")
+st.subheader("Effort")
 chart_df = filtered_df.sort_values("Date").copy()
 chart_df["Cumulative Effort"] = chart_df.groupby("Name")["Effort"].cumsum()
 
