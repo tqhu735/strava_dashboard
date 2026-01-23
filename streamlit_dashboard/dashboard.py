@@ -54,21 +54,19 @@ def display_metrics(data: pd.DataFrame) -> None:
     cols[4].metric("Total Elevation", f"{int(total_elevation)} m")
 
 
-def render_goal_progress(data: pd.DataFrame) -> None:
+def render_goal_progress(data: pd.DataFrame, today: datetime.date) -> None:
     """Render a progress bar for the group distance goal with predictions."""
     total_distance = data["Distance (km)"].sum()
     progress = min(1.0, total_distance / GROUP_DISTANCE_GOAL)
 
     # Calculate prediction based on daily average
-    days_elapsed = (TODAY - COMPETITION_START_DATE).days + 1
+    days_elapsed = (today - COMPETITION_START_DATE).days + 1
     if days_elapsed > 0:
         predicted_total = (total_distance / days_elapsed) * 365
     else:
         predicted_total = 0
 
     st.subheader("Goal Progress")
-
-    # Custom progress bar with metric labels
     st.progress(progress)
 
     c1, c2 = st.columns(2)
@@ -79,8 +77,6 @@ def render_goal_progress(data: pd.DataFrame) -> None:
         delta=f"{predicted_total - GROUP_DISTANCE_GOAL:,.1f} km",
         help="Prediction based on current daily average extrapolated to 365 days.",
     )
-
-    # TODO: Progress vs linear path to goal
 
 
 def get_winner_history(
@@ -111,10 +107,13 @@ def get_winner_history(
 
 
 def run_monte_carlo_simulation(
-    daily_effort_df: pd.DataFrame, current_totals: pd.Series, days_remaining: int
+    daily_effort_df: pd.DataFrame,
+    current_totals: pd.Series,
+    days_remaining: int,
+    today: datetime.date,
 ) -> pd.DataFrame:
     """Run Monte Carlo simulation to estimate win probabilities."""
-    all_dates = pd.date_range(start=COMPETITION_START_DATE, end=TODAY)
+    all_dates = pd.date_range(start=COMPETITION_START_DATE, end=today)
     teams = current_totals.index.tolist()
     n_days = len(all_dates)
 
@@ -157,143 +156,63 @@ def get_ai_content_cached(summary: str) -> dict:
     return generate_ai_content(summary)
 
 
-def render_standings_table(
-    data: pd.DataFrame, columns: list, format_dict: dict = None
+# --- Render Functions ---
+def render_activity_heatmap(data: pd.DataFrame) -> None:
+    """Render the activity heatmap showing daily effort."""
+    st.subheader("Activity Heatmap")
+
+    daily_summary = (
+        data.groupby("Date")
+        .agg(
+            {
+                "Effort": "sum",
+                "Distance (km)": "sum",
+                "Name": lambda x: ", ".join(sorted(x.unique())),
+                "Type": lambda x: ", ".join(sorted(x.unique())),
+            }
+        )
+        .reset_index()
+    )
+    daily_summary["Week"] = daily_summary["Date"].dt.isocalendar().week
+    daily_summary["Day"] = daily_summary["Date"].dt.day_name()
+
+    heatmap = (
+        alt.Chart(daily_summary)
+        .mark_rect()
+        .encode(
+            x=alt.X("Week:O", title="Week of Year"),
+            y=alt.Y("Day:N", sort=DAYS_OF_WEEK, title="Day of Week"),
+            color=alt.Color(
+                "Effort:Q", title="Daily Effort", scale=alt.Scale(scheme="greens")
+            ),
+            tooltip=[
+                alt.Tooltip("Date:T", format="%Y-%m-%d"),
+                alt.Tooltip("Effort:Q", format=".1f", title="Total Effort"),
+                alt.Tooltip("Distance (km):Q", format=".1f", title="Total Km"),
+                alt.Tooltip("Name:N", title="People"),
+                alt.Tooltip("Type:N", title="Activities"),
+            ],
+        )
+        .properties(height=250)
+        .configure_axis(labelFontSize=10, titleFontSize=12)
+    )
+
+    st.altair_chart(heatmap, width="stretch")
+
+
+def render_team_standings(
+    filtered_df: pd.DataFrame,
+    history_df: pd.DataFrame,
+    today: datetime.date,
+    current_month: str,
 ) -> None:
-    """Render a standings dataframe with optional formatting."""
-    if format_dict:
-        st.dataframe(data.style.format(format_dict), width="stretch")
-    else:
-        st.dataframe(data, width="stretch", hide_index=True)
-
-
-# --- Data Loading ---
-df = load_data()
-if df.empty:
-    st.stop()
-
-df["Month"] = df["Date"].dt.strftime("%Y-%m")
-TODAY = datetime.date.today()
-CURRENT_MONTH = TODAY.strftime("%Y-%m")
-
-
-# --- Sidebar Filters ---
-st.sidebar.header("Filters")
-
-if st.sidebar.button("Update Data", width="stretch"):
-    load_data.clear()
-    st.rerun()
-
-st.sidebar.divider()
-
-min_date, max_date = df["Date"].min(), df["Date"].max()
-date_range = st.sidebar.date_input(
-    "Date Range", value=(min_date, max_date), min_value=min_date, max_value=max_date
-)
-
-all_teams = sorted(df["Team"].unique())
-selected_teams = st.sidebar.pills(
-    "Select Teams", all_teams, default=all_teams, selection_mode="multi"
-)
-
-all_types = sorted(df["Type"].unique())
-selected_types = st.sidebar.pills(
-    "Activity Type", all_types, default=all_types, selection_mode="multi"
-)
-
-all_names = sorted(df["Name"].unique())
-selected_names = st.sidebar.pills(
-    "Competitors", all_names, default=all_names, selection_mode="multi"
-)
-
-
-# --- Apply Filters ---
-categorical_mask = (
-    df["Team"].isin(selected_teams)
-    & df["Type"].isin(selected_types)
-    & df["Name"].isin(selected_names)
-)
-
-if len(date_range) == 2:
-    start_date, end_date = date_range
-    date_mask = (df["Date"].dt.date >= start_date) & (df["Date"].dt.date <= end_date)
-    filtered_df = df[date_mask & categorical_mask]
-else:
-    filtered_df = df[categorical_mask]
-
-# History uses categorical filters only (ignores date range)
-history_df = df[categorical_mask].copy()
-
-
-# --- Main Dashboard ---
-st.title("Sleep Comp Fitness Challenge")
-if len(date_range) == 2:
-    st.markdown(
-        f"*Tracking activities from **{date_range[0]}** to **{date_range[1]}***"
-    )
-
-display_metrics(filtered_df)
-st.divider()
-
-# Reserve space for AI section (rendered last to avoid blocking)
-ai_placeholder = st.empty()
-st.divider()
-
-st.header("Group")
-st.subheader("Activity Heatmap")
-daily_summary = (
-    filtered_df.groupby("Date")
-    .agg(
-        {
-            "Effort": "sum",
-            "Distance (km)": "sum",
-            "Name": lambda x: ", ".join(sorted(x.unique())),
-            "Type": lambda x: ", ".join(sorted(x.unique())),
-        }
-    )
-    .reset_index()
-)
-daily_summary["Week"] = daily_summary["Date"].dt.isocalendar().week
-daily_summary["Day"] = daily_summary["Date"].dt.day_name()
-
-heatmap = (
-    alt.Chart(daily_summary)
-    .mark_rect()
-    .encode(
-        x=alt.X("Week:O", title="Week of Year"),
-        y=alt.Y("Day:N", sort=DAYS_OF_WEEK, title="Day of Week"),
-        color=alt.Color(
-            "Effort:Q", title="Daily Effort", scale=alt.Scale(scheme="greens")
-        ),
-        tooltip=[
-            alt.Tooltip("Date:T", format="%Y-%m-%d"),
-            alt.Tooltip("Effort:Q", format=".1f", title="Total Effort"),
-            alt.Tooltip("Distance (km):Q", format=".1f", title="Total Km"),
-            alt.Tooltip("Name:N", title="People"),
-            alt.Tooltip("Type:N", title="Activities"),
-        ],
-    )
-    .properties(height=250)
-    .configure_axis(labelFontSize=10, titleFontSize=12)
-)
-
-st.altair_chart(heatmap, width="stretch")
-
-render_goal_progress(filtered_df)
-st.divider()
-
-
-# --- Team Section ---
-st.header("Team")
-col_team_stats, col_win_prob = st.columns(2)
-
-with col_team_stats:
+    """Render the team standings tabs (Month, Year, History)."""
     st.subheader("Standings")
     tab_month, tab_year, tab_history = st.tabs(["Month", "Year", "History"])
 
     with tab_month:
-        st.caption(f"Standings for {TODAY.strftime('%B %Y')}")
-        month_data = filtered_df[filtered_df["Month"] == CURRENT_MONTH]
+        st.caption(f"Standings for {today.strftime('%B %Y')}")
+        month_data = filtered_df[filtered_df["Month"] == current_month]
         if not month_data.empty:
             stats = (
                 month_data.groupby("Team")[["Effort", "Distance (km)"]]
@@ -322,15 +241,17 @@ with col_team_stats:
         else:
             st.info("No data available for history.")
 
-with col_win_prob:
+
+def render_win_probability(df: pd.DataFrame, today: datetime.date) -> None:
+    """Render the win probability donut chart."""
     st.subheader("Win Probability")
-    days_remaining = (COMPETITION_END_DATE - TODAY).days
+    days_remaining = (COMPETITION_END_DATE - today).days
 
     if days_remaining > 0:
         daily_effort = df.groupby(["Team", "Date"])["Effort"].sum().reset_index()
         current_totals = df.groupby("Team")["Effort"].sum()
         win_probs = run_monte_carlo_simulation(
-            daily_effort, current_totals, days_remaining
+            daily_effort, current_totals, days_remaining, today
         )
 
         prob_chart = (
@@ -350,49 +271,68 @@ with col_win_prob:
     else:
         st.info("Competition has ended.")
 
-st.subheader("Effort")
-team_daily = filtered_df.groupby(["Team", "Date"])["Effort"].sum().reset_index()
-team_daily = team_daily.sort_values("Date")
-team_daily["Cumulative Effort"] = team_daily.groupby("Team")["Effort"].cumsum()
 
-team_line_chart = (
-    alt.Chart(team_daily)
-    .mark_line(point=True)
-    .encode(
-        x=alt.X("Date:T", title=None),
-        y=alt.Y("Cumulative Effort:Q", title="Effort"),
-        color=alt.Color("Team:N"),
-        tooltip=["Date", "Team", "Cumulative Effort"],
+def render_team_effort_chart(data: pd.DataFrame) -> None:
+    """Render the cumulative team effort line chart."""
+    st.subheader("Effort")
+
+    team_daily = data.groupby(["Team", "Date"])["Effort"].sum().reset_index()
+    team_daily = team_daily.sort_values("Date")
+    team_daily["Cumulative Effort"] = team_daily.groupby("Team")["Effort"].cumsum()
+
+    team_line_chart = (
+        alt.Chart(team_daily)
+        .mark_line(point=True)
+        .encode(
+            x=alt.X("Date:T", title=None),
+            y=alt.Y("Cumulative Effort:Q", title="Effort"),
+            color=alt.Color("Team:N"),
+            tooltip=["Date", "Team", "Cumulative Effort"],
+        )
+        .properties(height=230)
     )
-    .properties(height=230)
-)
-st.altair_chart(team_line_chart, width="stretch")
-
-st.divider()
+    st.altair_chart(team_line_chart, width="stretch")
 
 
-# --- Individual Section ---
-st.header("Individual")
+def render_individual_standings(
+    filtered_df: pd.DataFrame,
+    history_df: pd.DataFrame,
+    today: datetime.date,
+    current_month: str,
+) -> None:
+    """Render the individual standings tabs (Month, Year, History)."""
+    st.subheader("Standings")
+    indiv_tab_month, indiv_tab_year, indiv_tab_history = st.tabs(
+        ["Month", "Year", "History"]
+    )
 
-st.subheader("Standings")
-indiv_tab_month, indiv_tab_year, indiv_tab_history = st.tabs(
-    ["Month", "Year", "History"]
-)
+    indiv_format = {
+        "Effort": "{:.1f}",
+        "Distance (km)": "{:.1f}",
+        "Time (min)": "{:.0f}",
+    }
 
-indiv_format = {
-    "Effort": "{:.1f}",
-    "Distance (km)": "{:.1f}",
-    "Time (min)": "{:.0f}",
-}
+    with indiv_tab_month:
+        st.caption(f"Standings for {today.strftime('%B %Y')}")
+        month_data_indiv = filtered_df[filtered_df["Month"] == current_month]
+        if not month_data_indiv.empty:
+            stats = (
+                month_data_indiv.groupby(["Name"])[
+                    ["Effort", "Distance (km)", "Time (min)"]
+                ]
+                .sum()
+                .reset_index()
+                .sort_values("Effort", ascending=False)
+                .reset_index(drop=True)
+            )
+            stats.index += 1
+            st.dataframe(stats.style.format(indiv_format), width="stretch")
+        else:
+            st.info("No activities for the current month.")
 
-with indiv_tab_month:
-    st.caption(f"Standings for {TODAY.strftime('%B %Y')}")
-    month_data_indiv = filtered_df[filtered_df["Month"] == CURRENT_MONTH]
-    if not month_data_indiv.empty:
+    with indiv_tab_year:
         stats = (
-            month_data_indiv.groupby(["Name"])[
-                ["Effort", "Distance (km)", "Time (min)"]
-            ]
+            filtered_df.groupby(["Name"])[["Effort", "Distance (km)", "Time (min)"]]
             .sum()
             .reset_index()
             .sort_values("Effort", ascending=False)
@@ -400,87 +340,80 @@ with indiv_tab_month:
         )
         stats.index += 1
         st.dataframe(stats.style.format(indiv_format), width="stretch")
-    else:
-        st.info("No activities for the current month.")
 
-with indiv_tab_year:
-    stats = (
-        filtered_df.groupby(["Name"])[["Effort", "Distance (km)", "Time (min)"]]
-        .sum()
-        .reset_index()
-        .sort_values("Effort", ascending=False)
-        .reset_index(drop=True)
+    with indiv_tab_history:
+        st.caption("Winners of each month")
+        history_table_indiv = get_winner_history(history_df, ["Name", "Team"])
+        if not history_table_indiv.empty:
+            st.dataframe(history_table_indiv, width="stretch", hide_index=True)
+        else:
+            st.info("No data available for history.")
+
+
+def render_individual_effort_chart(data: pd.DataFrame) -> None:
+    """Render the cumulative individual effort line chart."""
+    st.subheader("Effort")
+
+    chart_df = data.sort_values("Date").copy()
+    chart_df["Cumulative Effort"] = chart_df.groupby("Name")["Effort"].cumsum()
+
+    line_chart = (
+        alt.Chart(chart_df)
+        .mark_line(point=True)
+        .encode(
+            x="Date:T",
+            y="Cumulative Effort:Q",
+            color="Name:N",
+            tooltip=["Date", "Name", "Type", "Distance (km)", "Effort"],
+        )
     )
-    stats.index += 1
-    st.dataframe(stats.style.format(indiv_format), width="stretch")
 
-with indiv_tab_history:
-    st.caption("Winners of each month")
-    history_table_indiv = get_winner_history(history_df, ["Name", "Team"])
-    if not history_table_indiv.empty:
-        st.dataframe(history_table_indiv, width="stretch", hide_index=True)
-    else:
-        st.info("No data available for history.")
+    st.altair_chart(line_chart, width="stretch")
 
-st.subheader("Effort")
-chart_df = filtered_df.sort_values("Date").copy()
-chart_df["Cumulative Effort"] = chart_df.groupby("Name")["Effort"].cumsum()
 
-line_chart = (
-    alt.Chart(chart_df)
-    .mark_line(point=True)
-    .encode(
-        x="Date:T",
-        y="Cumulative Effort:Q",
-        color="Name:N",
-        tooltip=["Date", "Name", "Type", "Distance (km)", "Effort"],
+def render_activity_feed(data: pd.DataFrame) -> None:
+    """Render the activity feed table."""
+    st.subheader("Activities")
+
+    display_cols = [
+        "Date",
+        "Name",
+        "Team",
+        "Type",
+        "Distance (km)",
+        "Time (min)",
+        "Pace (min/km)",
+        "Effort",
+    ]
+    activity_format = {
+        "Date": lambda t: t.strftime("%Y-%m-%d"),
+        "Distance (km)": "{:.2f}",
+        "Time (min)": "{:.2f}",
+        "Pace (min/km)": "{:.2f}",
+        "Effort": "{:.2f}",
+    }
+
+    st.dataframe(
+        data.sort_values("Date", ascending=False)[display_cols].style.format(
+            activity_format
+        ),
+        width="stretch",
+        hide_index=True,
     )
-)
-
-st.altair_chart(line_chart, width="stretch")
-st.divider()
 
 
-# --- Activity Feed ---
-st.subheader("Activities")
-DISPLAY_COLS = [
-    "Date",
-    "Name",
-    "Team",
-    "Type",
-    "Distance (km)",
-    "Time (min)",
-    "Pace (min/km)",
-    "Effort",
-]
-ACTIVITY_FORMAT = {
-    "Date": lambda t: t.strftime("%Y-%m-%d"),
-    "Distance (km)": "{:.2f}",
-    "Time (min)": "{:.2f}",
-    "Pace (min/km)": "{:.2f}",
-    "Effort": "{:.2f}",
-}
-st.dataframe(
-    filtered_df.sort_values("Date", ascending=False)[DISPLAY_COLS].style.format(
-        ACTIVITY_FORMAT
-    ),
-    width="stretch",
-    hide_index=True,
-)
-
-
-# --- AI Section (Rendered Last) ---
-with ai_placeholder.container():
+def render_ai_section(data: pd.DataFrame) -> None:
+    """Render the AI-powered insights and fun facts section."""
     # Initialize AI data on first load
     if "ai_data" not in st.session_state:
         if get_client():
-            data_summary = get_data_summary(filtered_df)
+            data_summary = get_data_summary(data)
             st.session_state["ai_data"] = get_ai_content_cached(data_summary)
         else:
             st.session_state["ai_data"] = {}
 
     ai_data = st.session_state.get("ai_data", {})
-    manual_facts = get_manual_fun_facts(filtered_df)
+    manual_facts = get_manual_fun_facts(data)
 
     if get_client():
         col_title, col_btn = st.columns([10, 1])
@@ -489,7 +422,7 @@ with ai_placeholder.container():
         with col_btn:
             if st.button("🔄", help="Refresh insights for current filters"):
                 with st.spinner("Refreshing..."):
-                    data_summary = get_data_summary(filtered_df)
+                    data_summary = get_data_summary(data)
                     st.session_state["ai_data"] = get_ai_content_cached(data_summary)
                 st.rerun()
 
@@ -519,3 +452,137 @@ with ai_placeholder.container():
                 ]
             )
         )
+
+
+def render_sidebar(df: pd.DataFrame) -> tuple:
+    """Render sidebar filters and return filter values."""
+    st.sidebar.header("Filters")
+
+    if st.sidebar.button("Update Data", width="stretch"):
+        load_data.clear()
+        st.rerun()
+
+    st.sidebar.divider()
+
+    min_date, max_date = df["Date"].min(), df["Date"].max()
+    date_range = st.sidebar.date_input(
+        "Date Range",
+        value=(min_date, max_date),
+        min_value=min_date,
+        max_value=max_date,
+    )
+
+    all_teams = sorted(df["Team"].unique())
+    selected_teams = st.sidebar.pills(
+        "Select Teams", all_teams, default=all_teams, selection_mode="multi"
+    )
+
+    all_types = sorted(df["Type"].unique())
+    selected_types = st.sidebar.pills(
+        "Activity Type", all_types, default=all_types, selection_mode="multi"
+    )
+
+    all_names = sorted(df["Name"].unique())
+    selected_names = st.sidebar.pills(
+        "Competitors", all_names, default=all_names, selection_mode="multi"
+    )
+
+    return date_range, selected_teams, selected_types, selected_names
+
+
+def apply_filters(
+    df: pd.DataFrame,
+    date_range: tuple,
+    selected_teams: list,
+    selected_types: list,
+    selected_names: list,
+) -> tuple:
+    """Apply filters to the dataframe and return filtered + history dataframes."""
+    categorical_mask = (
+        df["Team"].isin(selected_teams)
+        & df["Type"].isin(selected_types)
+        & df["Name"].isin(selected_names)
+    )
+
+    if len(date_range) == 2:
+        start_date, end_date = date_range
+        date_mask = (df["Date"].dt.date >= start_date) & (
+            df["Date"].dt.date <= end_date
+        )
+        filtered_df = df[date_mask & categorical_mask]
+    else:
+        filtered_df = df[categorical_mask]
+
+    # History uses categorical filters only (ignores date range)
+    history_df = df[categorical_mask].copy()
+
+    return filtered_df, history_df
+
+
+# --- Main Application ---
+def main():
+    """Main application entry point."""
+    # Data Loading
+    df = load_data()
+    if df.empty:
+        st.stop()
+
+    df["Month"] = df["Date"].dt.strftime("%Y-%m")
+    today = datetime.date.today()
+    current_month = today.strftime("%Y-%m")
+
+    # Sidebar Filters
+    date_range, selected_teams, selected_types, selected_names = render_sidebar(df)
+    filtered_df, history_df = apply_filters(
+        df, date_range, selected_teams, selected_types, selected_names
+    )
+
+    # Main Dashboard Header
+    st.title("Sleep Comp Fitness Challenge")
+    if len(date_range) == 2:
+        st.markdown(
+            f"*Tracking activities from **{date_range[0]}** to **{date_range[1]}***"
+        )
+
+    display_metrics(filtered_df)
+    st.divider()
+
+    # Reserve space for AI section (rendered last to avoid blocking)
+    ai_placeholder = st.empty()
+    st.divider()
+
+    # Group Section
+    st.header("Group")
+    render_activity_heatmap(filtered_df)
+    render_goal_progress(filtered_df, today)
+    st.divider()
+
+    # Team Section
+    st.header("Team")
+    col_team_stats, col_win_prob = st.columns(2)
+
+    with col_team_stats:
+        render_team_standings(filtered_df, history_df, today, current_month)
+
+    with col_win_prob:
+        render_win_probability(df, today)
+
+    render_team_effort_chart(filtered_df)
+    st.divider()
+
+    # Individual Section
+    st.header("Individual")
+    render_individual_standings(filtered_df, history_df, today, current_month)
+    render_individual_effort_chart(filtered_df)
+    st.divider()
+
+    # Activity Feed
+    render_activity_feed(filtered_df)
+
+    # AI Section (Rendered Last)
+    with ai_placeholder.container():
+        render_ai_section(filtered_df)
+
+
+if __name__ == "__main__":
+    main()

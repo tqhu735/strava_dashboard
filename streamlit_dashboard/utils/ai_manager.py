@@ -1,17 +1,19 @@
 """
 AI Manager - Handles all AI/LLM interactions for the dashboard.
 """
-import streamlit as st
-import os
+
 import json
-from google import genai
+import os
+
+import streamlit as st
 from dotenv import load_dotenv
+from google import genai
 
 load_dotenv()
 
 # --- Configuration ---
 # Will need to be changed to gemini-3-flash (non-preview) upon stable release
-MODELS_TO_TRY = ['gemini-3-flash-preview', 'gemma-3-27b-it']
+MODELS_TO_TRY = ["gemini-3-flash-preview", "gemma-3-27b-it"]
 
 SYSTEM_PROMPT = """
 You are a brutally honest, toxic fitness coach addressing an older Gen Z audience (~22).
@@ -52,28 +54,39 @@ Member descriptions:
 Provide a JSON response with two keys: 'facts' (list of 3 strings) and 'insight' (string). 
 """
 
+FALLBACK_RESPONSE = {
+    "facts": [
+        "Rate limits hit.",
+        "Go for a run instead of checking stats.",
+        "AI is taking a nap.",
+    ],
+    "insight": "All AI models are currently exhausted trying to calculate your effort. Try again later.",
+    "model": "None (System Fallback)",
+}
 
-def get_api_key():
-    """Retrieves the Gemini API key from Streamlit secrets or environment variables."""
+
+# --- Helper Functions ---
+def get_api_key() -> str | None:
+    """Retrieve the Gemini API key from Streamlit secrets or environment variables."""
     try:
-        return st.secrets.get('GEMINI_API_KEY') or os.getenv('GEMINI_API_KEY')
+        return st.secrets.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
     except FileNotFoundError:
-        return os.getenv('GEMINI_API_KEY')
+        return os.getenv("GEMINI_API_KEY")
 
 
-def get_client():
-    """Creates and returns a GenAI client, or None if no API key."""
+def get_client() -> genai.Client | None:
+    """Create and return a GenAI client, or None if no API key is available."""
     api_key = get_api_key()
     if not api_key:
         return None
     return genai.Client(api_key=api_key)
 
 
-def _extract_json(text):
-    """Extracts and parses JSON from a text response."""
+def _extract_json(text: str) -> dict | None:
+    """Extract and parse JSON from a text response."""
     try:
-        start = text.find('{')
-        end = text.rfind('}') + 1
+        start = text.find("{")
+        end = text.rfind("}") + 1
         if start != -1 and end > start:
             return json.loads(text[start:end])
     except (json.JSONDecodeError, ValueError):
@@ -81,44 +94,64 @@ def _extract_json(text):
     return None
 
 
-def generate_ai_content(summary):
+def _build_prompt(summary: str) -> str:
+    """Build the full prompt for AI content generation."""
+    return (
+        f"{SYSTEM_PROMPT}\n\n"
+        f"Data Summary:\n{summary}\n\n"
+        "Tasks:\n"
+        "1. 3 slightly unhinged, funny, but still insightful facts\n"
+        "2. One savage insight roasting the group"
+    )
+
+
+# --- Public Functions ---
+def generate_ai_content(summary: str) -> dict:
     """
-    Generates AI content based on the data summary.
+    Generate AI content based on the data summary.
+
     Tries models in order, falling back if one fails.
+
+    Args:
+        summary: Text summary of the activity data.
+
+    Returns:
+        Dictionary with 'facts', 'insight', and 'model' keys.
     """
     client = get_client()
     if not client:
         return {}
 
-    prompt = f"{SYSTEM_PROMPT}\n\nData Summary:\n{summary}\n\nTasks:\n1. 3 slightly unhinged, funny, but still insightful facts\n2. One savage insight roasting the group"
+    prompt = _build_prompt(summary)
 
     for model_name in MODELS_TO_TRY:
         try:
             print(f"Attempting with model: {model_name}")
             response = client.models.generate_content(
                 model=model_name,
-                contents=prompt
+                contents=prompt,
             )
             text = response.text
-            print(f"Response from {model_name}: {text[:100]}...") # Print first 100 chars
-            
+            print(f"Response from {model_name}: {text[:100]}...")
+
             parsed = _extract_json(text)
             if parsed:
-                parsed['model'] = model_name
+                parsed["model"] = model_name
                 return parsed
-            
+
             # Fallback: treat raw text as insight if JSON parsing failed
             if text:
-                print(f"JSON parsing failed for {model_name}, falling back to raw text.")
-                return {"facts": ["AI was too creative to list facts."], "insight": text, "model": model_name}
+                print(
+                    f"JSON parsing failed for {model_name}, falling back to raw text."
+                )
+                return {
+                    "facts": ["AI was too creative to list facts."],
+                    "insight": text,
+                    "model": model_name,
+                }
 
         except Exception as e:
             print(f"Error with model {model_name}: {e}")
             continue
 
-    # Final fallback if all models fail
-    return {
-        "facts": ["Rate limits hit.", "Go for a run instead of checking stats.", "AI is taking a nap."], 
-        "insight": "All AI models are currently exhausted trying to calculate your effort. Try again later.",
-        "model": "None (System Fallback)"
-    }
+    return FALLBACK_RESPONSE
