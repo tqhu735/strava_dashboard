@@ -458,34 +458,154 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
     """Render sidebar filters and return filter values."""
     st.sidebar.header("Filters")
 
-    if st.sidebar.button("Update Data", width="stretch"):
-        load_data.clear()
-        st.rerun()
+    # --- Data Refresh & Reset Controls ---
+    col_update, col_reset = st.sidebar.columns(2)
+    with col_update:
+        if st.button("🔄 Refresh", use_container_width=True, help="Fetch latest data"):
+            load_data.clear()
+            st.rerun()
+    with col_reset:
+        if st.button("↩️ Reset", use_container_width=True, help="Reset all filters"):
+            for key in list(st.session_state.keys()):
+                if key.startswith("filter_"):
+                    del st.session_state[key]
+            st.rerun()
 
     st.sidebar.divider()
 
+    # --- Date Range Filter ---
     min_date, max_date = df["Date"].min(), df["Date"].max()
-    date_range = st.sidebar.date_input(
-        "Date Range",
-        value=(min_date, max_date),
-        min_value=min_date,
-        max_value=max_date,
-    )
+    today = datetime.date.today()
 
+    # Initialize date filter state
+    if "filter_date_preset" not in st.session_state:
+        st.session_state["filter_date_preset"] = "All Time"
+
+    with st.sidebar.expander("📅 Date Range", expanded=True):
+        # Quick date presets
+        date_presets = {
+            "Last 7 Days": (today - datetime.timedelta(days=7), today),
+            "Last 30 Days": (today - datetime.timedelta(days=30), today),
+            "This Month": (today.replace(day=1), today),
+            "Last Month": (
+                (today.replace(day=1) - datetime.timedelta(days=1)).replace(day=1),
+                today.replace(day=1) - datetime.timedelta(days=1),
+            ),
+            "Year to Date": (datetime.date(today.year, 1, 1), today),
+            "All Time": (min_date.date(), max_date.date()),
+        }
+
+        selected_preset = st.radio(
+            "Quick Select",
+            options=list(date_presets.keys()),
+            index=list(date_presets.keys()).index(
+                st.session_state.get("filter_date_preset", "All Time")
+            ),
+            horizontal=True,
+            key="filter_date_preset",
+            label_visibility="collapsed",
+        )
+
+        # Get preset dates, clamped to available data range
+        preset_start, preset_end = date_presets[selected_preset]
+        preset_start = max(preset_start, min_date.date())
+        preset_end = min(preset_end, max_date.date())
+
+        # Custom date input (updates based on preset)
+        date_range = st.date_input(
+            "Custom Range",
+            value=(preset_start, preset_end),
+            min_value=min_date,
+            max_value=max_date,
+            label_visibility="collapsed",
+        )
+
+    # --- Team Filter ---
     all_teams = sorted(df["Team"].unique())
-    selected_teams = st.sidebar.pills(
-        "Select Teams", all_teams, default=all_teams, selection_mode="multi"
-    )
 
+    if "filter_teams" not in st.session_state:
+        st.session_state["filter_teams"] = all_teams
+
+    teams_active = len(st.session_state["filter_teams"])
+    teams_label = f"👥 Teams ({teams_active}/{len(all_teams)})"
+
+    with st.sidebar.expander(teams_label, expanded=True):
+        col_all, col_clear = st.columns(2)
+        with col_all:
+            if st.button("Select All", key="teams_all", use_container_width=True):
+                st.session_state["filter_teams"] = all_teams
+                st.rerun()
+        with col_clear:
+            if st.button("Clear", key="teams_clear", use_container_width=True):
+                st.session_state["filter_teams"] = []
+                st.rerun()
+
+        selected_teams = st.pills(
+            "Teams",
+            all_teams,
+            default=st.session_state["filter_teams"],
+            selection_mode="multi",
+            key="filter_teams",
+            label_visibility="collapsed",
+        )
+
+    # --- Activity Type Filter ---
     all_types = sorted(df["Type"].unique())
-    selected_types = st.sidebar.pills(
-        "Activity Type", all_types, default=all_types, selection_mode="multi"
-    )
 
+    if "filter_types" not in st.session_state:
+        st.session_state["filter_types"] = all_types
+
+    types_active = len(st.session_state["filter_types"])
+    types_label = f"🏃 Activity Type ({types_active}/{len(all_types)})"
+
+    with st.sidebar.expander(types_label, expanded=True):
+        col_all, col_clear = st.columns(2)
+        with col_all:
+            if st.button("Select All", key="types_all", use_container_width=True):
+                st.session_state["filter_types"] = all_types
+                st.rerun()
+        with col_clear:
+            if st.button("Clear", key="types_clear", use_container_width=True):
+                st.session_state["filter_types"] = []
+                st.rerun()
+
+        selected_types = st.pills(
+            "Types",
+            all_types,
+            default=st.session_state["filter_types"],
+            selection_mode="multi",
+            key="filter_types",
+            label_visibility="collapsed",
+        )
+
+    # --- Competitors Filter ---
     all_names = sorted(df["Name"].unique())
-    selected_names = st.sidebar.pills(
-        "Competitors", all_names, default=all_names, selection_mode="multi"
-    )
+
+    if "filter_names" not in st.session_state:
+        st.session_state["filter_names"] = all_names
+
+    names_active = len(st.session_state["filter_names"])
+    names_label = f"🧑 Competitors ({names_active}/{len(all_names)})"
+
+    with st.sidebar.expander(names_label, expanded=True):
+        col_all, col_clear = st.columns(2)
+        with col_all:
+            if st.button("Select All", key="names_all", use_container_width=True):
+                st.session_state["filter_names"] = all_names
+                st.rerun()
+        with col_clear:
+            if st.button("Clear", key="names_clear", use_container_width=True):
+                st.session_state["filter_names"] = []
+                st.rerun()
+
+        selected_names = st.pills(
+            "Competitors",
+            all_names,
+            default=st.session_state["filter_names"],
+            selection_mode="multi",
+            key="filter_names",
+            label_visibility="collapsed",
+        )
 
     return date_range, selected_teams, selected_types, selected_names
 
