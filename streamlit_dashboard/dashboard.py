@@ -498,9 +498,6 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
         selected_preset = st.radio(
             "Quick Select",
             options=list(date_presets.keys()),
-            index=list(date_presets.keys()).index(
-                st.session_state.get("filter_date_preset", "All Time")
-            ),
             horizontal=True,
             key="filter_date_preset",
             label_visibility="collapsed",
@@ -542,7 +539,6 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
         selected_teams = st.pills(
             "Teams",
             all_teams,
-            default=st.session_state["filter_teams"],
             selection_mode="multi",
             key="filter_teams",
             label_visibility="collapsed",
@@ -570,7 +566,6 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
         selected_types = st.pills(
             "Types",
             all_types,
-            default=st.session_state["filter_types"],
             selection_mode="multi",
             key="filter_types",
             label_visibility="collapsed",
@@ -598,7 +593,6 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
         selected_names = st.pills(
             "Competitors",
             all_names,
-            default=st.session_state["filter_names"],
             selection_mode="multi",
             key="filter_names",
             label_visibility="collapsed",
