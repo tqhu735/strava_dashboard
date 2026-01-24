@@ -461,11 +461,11 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
     # --- Data Refresh & Reset Controls ---
     col_update, col_reset = st.sidebar.columns(2)
     with col_update:
-        if st.button("🔄 Refresh", use_container_width=True, help="Fetch latest data"):
+        if st.button("Refresh", use_container_width=True, help="Fetch latest data"):
             load_data.clear()
             st.rerun()
     with col_reset:
-        if st.button("↩️ Reset", use_container_width=True, help="Reset all filters"):
+        if st.button("Reset", use_container_width=True, help="Reset all filters"):
             for key in list(st.session_state.keys()):
                 if key.startswith("filter_"):
                     del st.session_state[key]
@@ -481,7 +481,7 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
     if "filter_date_preset" not in st.session_state:
         st.session_state["filter_date_preset"] = "All Time"
 
-    with st.sidebar.expander("📅 Date Range", expanded=True):
+    with st.sidebar.expander("Date Range", expanded=True):
         # Quick date presets
         date_presets = {
             "Last 7 Days": (today - datetime.timedelta(days=7), today),
@@ -526,8 +526,7 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
     if "filter_teams" not in st.session_state:
         st.session_state["filter_teams"] = all_teams
 
-    teams_active = len(st.session_state["filter_teams"])
-    teams_label = f"👥 Teams ({teams_active}/{len(all_teams)})"
+    teams_label = "Teams"
 
     with st.sidebar.expander(teams_label, expanded=True):
         col_all, col_clear = st.columns(2)
@@ -555,8 +554,7 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
     if "filter_types" not in st.session_state:
         st.session_state["filter_types"] = all_types
 
-    types_active = len(st.session_state["filter_types"])
-    types_label = f"🏃 Activity Type ({types_active}/{len(all_types)})"
+    types_label = "Activity Type"
 
     with st.sidebar.expander(types_label, expanded=True):
         col_all, col_clear = st.columns(2)
@@ -584,8 +582,7 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
     if "filter_names" not in st.session_state:
         st.session_state["filter_names"] = all_names
 
-    names_active = len(st.session_state["filter_names"])
-    names_label = f"🧑 Competitors ({names_active}/{len(all_names)})"
+    names_label = "Competitors"
 
     with st.sidebar.expander(names_label, expanded=True):
         col_all, col_clear = st.columns(2)
