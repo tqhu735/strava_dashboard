@@ -51,7 +51,9 @@ Member descriptions:
 - Raymond: Nap Comp, sometimes referred to as Raymods. Really focused and high achieving, now studying first-year Biomed at UOA. 
 - Andy: Nap Comp, moved to Brisbane to pursue become a pilot.
 
-Provide a JSON response with two keys: 'facts' (list of 3 strings) and 'insight' (string). 
+Provide a JSON response with two keys:
+- 'insight' (string): A savage, funny roast of the group's performance
+- 'facts' (list of 3 strings): Genuine, data-driven observations about the competition (trends, comparisons, notable patterns - NOT roasts)
 """
 
 FALLBACK_RESPONSE = {
@@ -100,8 +102,8 @@ def _build_prompt(summary: str) -> str:
         f"{SYSTEM_PROMPT}\n\n"
         f"Data Summary:\n{summary}\n\n"
         "Tasks:\n"
-        "1. 3 slightly unhinged, funny, but still insightful facts\n"
-        "2. One savage insight roasting the group"
+        "1. For 'insight': One savage, brutal roast of the group (use your toxic coach persona)\n"
+        "2. For 'facts': 3 genuine, data-driven insights about trends, comparisons, or patterns (be analytical, not snarky)"
     )
 
 
