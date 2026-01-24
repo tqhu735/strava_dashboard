@@ -373,7 +373,7 @@ def render_individual_effort_chart(data: pd.DataFrame) -> None:
 
 def render_activity_feed(data: pd.DataFrame) -> None:
     """Render the activity feed table."""
-    st.subheader("Activities")
+    st.header("Activities")
 
     display_cols = [
         "Date",
