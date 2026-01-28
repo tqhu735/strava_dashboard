@@ -71,7 +71,7 @@ def render_goal_progress(data: pd.DataFrame, today: datetime.date) -> None:
 
     # Calculate Jan prediction
     days_passed_jan = (min(today, jan_end) - jan_start).days + 1
-    days_passed_jan = max(1, days_passed_jan)  # Avoid division by zero
+    days_passed_jan = max(1, days_passed_jan)
     jan_total_days = 31
 
     if days_passed_jan > 0:
@@ -350,7 +350,7 @@ def render_individual_standings(
         month_data_indiv = filtered_df[filtered_df["Month"] == current_month]
         if not month_data_indiv.empty:
             stats = (
-                month_data_indiv.groupby(["Name"])[
+                month_data_indiv.groupby(["Name", "Team"])[
                     ["Effort", "Distance (km)", "Time (min)"]
                 ]
                 .sum()
@@ -365,7 +365,9 @@ def render_individual_standings(
 
     with indiv_tab_year:
         stats = (
-            filtered_df.groupby(["Name"])[["Effort", "Distance (km)", "Time (min)"]]
+            filtered_df.groupby(["Name", "Team"])[
+                ["Effort", "Distance (km)", "Time (min)"]
+            ]
             .sum()
             .reset_index()
             .sort_values("Effort", ascending=False)
