@@ -106,9 +106,15 @@ function sendDiscordNotification(newActivities) {
         };
     });
 
-    for (const embed of embeds) {
+    for (let i = 0; i < filteredActivities.length; i++) {
+        const act = filteredActivities[i];
+        const name = act[1];
+        const discordId = DISCORD_IDS[name];
+        const mention = (discordId && discordId !== '') ? `<@${discordId}>` : name;
+
         const payload = {
-            embeds: [embed]
+            content: `${mention} just uploaded an activity!`,
+            embeds: [embeds[i]]
         };
 
         const options = {
@@ -119,7 +125,7 @@ function sendDiscordNotification(newActivities) {
 
         try {
             UrlFetchApp.fetch(DISCORD_WEBHOOK_URL, options);
-            Utilities.sleep(2000); // 2-second delay to respect rate limits (30 req/min)
+            Utilities.sleep(1000);
         } catch (e) {
             Logger.log(`Discord notification error: ${e.message}`);
         }
