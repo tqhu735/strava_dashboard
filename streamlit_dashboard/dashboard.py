@@ -56,38 +56,38 @@ def display_metrics(data: pd.DataFrame) -> None:
 
 def render_goal_progress(data: pd.DataFrame, today: datetime.date) -> None:
     """Render a progress bar for the group distance goal with predictions."""
-    # --- January Challenge ---
-    st.markdown("---")
-    st.subheader("January 1000 km Goal")
+    # # --- January Challenge ---
+    # st.markdown("---")
+    # st.subheader("January 1000 km Goal")
 
-    jan_goal = 1000.0
-    jan_start = datetime.date(COMPETITION_START_DATE.year, 1, 1)
-    jan_end = datetime.date(COMPETITION_START_DATE.year, 1, 31)
+    # jan_goal = 1000.0
+    # jan_start = datetime.date(COMPETITION_START_DATE.year, 1, 1)
+    # jan_end = datetime.date(COMPETITION_START_DATE.year, 1, 31)
 
-    # Filter for January data
-    jan_mask = (data["Date"].dt.date >= jan_start) & (data["Date"].dt.date <= jan_end)
-    jan_distance = data.loc[jan_mask, "Distance (km)"].sum()
-    jan_progress = min(1.0, jan_distance / jan_goal)
+    # # Filter for January data
+    # jan_mask = (data["Date"].dt.date >= jan_start) & (data["Date"].dt.date <= jan_end)
+    # jan_distance = data.loc[jan_mask, "Distance (km)"].sum()
+    # jan_progress = min(1.0, jan_distance / jan_goal)
 
-    # Calculate Jan prediction
-    days_passed_jan = (min(today, jan_end) - jan_start).days + 1
-    days_passed_jan = max(1, days_passed_jan)
-    jan_total_days = 31
+    # # Calculate Jan prediction
+    # days_passed_jan = (min(today, jan_end) - jan_start).days + 1
+    # days_passed_jan = max(1, days_passed_jan)
+    # jan_total_days = 31
 
-    if days_passed_jan > 0:
-        jan_predicted = (jan_distance / days_passed_jan) * jan_total_days
-    else:
-        jan_predicted = 0
+    # if days_passed_jan > 0:
+    #     jan_predicted = (jan_distance / days_passed_jan) * jan_total_days
+    # else:
+    #     jan_predicted = 0
 
-    st.progress(jan_progress)
+    # st.progress(jan_progress)
 
-    j1, j2 = st.columns(2)
-    j1.metric("Jan Distance", f"{jan_distance:,.1f}/{jan_goal:,.0f} km")
-    j2.metric(
-        "Jan Projected",
-        f"{jan_predicted:,.1f} km",
-        delta=f"{jan_predicted - jan_goal:,.1f} km",
-    )
+    # j1, j2 = st.columns(2)
+    # j1.metric("Jan Distance", f"{jan_distance:,.1f}/{jan_goal:,.0f} km")
+    # j2.metric(
+    #     "Jan Projected",
+    #     f"{jan_predicted:,.1f} km",
+    #     delta=f"{jan_predicted - jan_goal:,.1f} km",
+    # )
 
     total_distance = data["Distance (km)"].sum()
     progress = min(1.0, total_distance / GROUP_DISTANCE_GOAL)
