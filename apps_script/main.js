@@ -106,11 +106,9 @@ function sendDiscordNotification(newActivities) {
         };
     });
 
-    for (let i = 0; i < embeds.length; i += 10) {
-        const chunk = embeds.slice(i, i + 10);
+    for (const embed of embeds) {
         const payload = {
-            content: embeds.length > 10 ? `Batch update: ${filteredActivities.length} new activities!` : null,
-            embeds: chunk
+            embeds: [embed]
         };
 
         const options = {
@@ -121,9 +119,10 @@ function sendDiscordNotification(newActivities) {
 
         try {
             UrlFetchApp.fetch(DISCORD_WEBHOOK_URL, options);
-            Logger.log(`Successfully sent ${chunk.length} activities to Discord.`);
+            Utilities.sleep(2000); // 2-second delay to respect rate limits (30 req/min)
         } catch (e) {
             Logger.log(`Discord notification error: ${e.message}`);
         }
     }
+    Logger.log(`Successfully sent ${embeds.length} individual activities to Discord.`);
 }
