@@ -5,16 +5,7 @@ Data Manager - Handles data loading, transformation, and summarization.
 import pandas as pd
 import streamlit as st
 
-# --- Configuration ---
-SHEET_URL = (
-    "https://docs.google.com/spreadsheets/d/e/"
-    "2PACX-1vRePCvC9b_RY80n7ulOgVQQwKEWi5GZm8gDeyl7UTaTBONtAOqOsNgGGRm5R9vQtoospZ7RaPbIupBp/"
-    "pub?gid=0&single=true&output=csv"
-)
-
-REQUIRED_COLUMNS = ["Team", "Date", "Name"]
-STRING_COLUMNS = ["Team", "Type", "Name"]
-NUMERIC_COLUMNS = ["Distance (km)", "Effort", "Time (min)", "Elevation (m)"]
+from config import SHEET_URL, REQUIRED_COLUMNS, STRING_COLUMNS, NUMERIC_COLUMNS
 
 
 # --- Data Loading ---

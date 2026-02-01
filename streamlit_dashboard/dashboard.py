@@ -14,20 +14,14 @@ import streamlit as st
 from utils.ai_manager import generate_ai_content, get_client
 from utils.data_manager import get_data_summary, get_manual_fun_facts, load_data
 
-# --- Configuration ---
-COMPETITION_START_DATE = datetime.date(2026, 1, 1)
-COMPETITION_END_DATE = datetime.date(2026, 12, 31)
-N_SIMULATIONS = 10000
-DAYS_OF_WEEK = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
-]
-GROUP_DISTANCE_GOAL = 10000
+from config import (
+    COMPETITION_END_DATE,
+    COMPETITION_START_DATE,
+    DAYS_OF_WEEK,
+    GROUP_DISTANCE_GOAL,
+    INDIVIDUAL_GOALS,
+    N_SIMULATIONS,
+)
 
 st.set_page_config(
     page_title="Sleep Comp Fitness Challenge", page_icon="🏃", layout="wide"
