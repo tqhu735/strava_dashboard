@@ -185,9 +185,10 @@ def get_ai_content_cached(summary: str) -> dict:
 
 # --- Render Functions ---
 def render_activity_heatmap(data: pd.DataFrame) -> None:
-    """Render the activity heatmap showing daily effort."""
-    st.subheader("Activity Heatmap")
+    """Render separate daily and weekly activity heatmaps."""
+    st.subheader("Activity Heatmaps")
 
+    # --- Daily Heatmap ---
     daily_summary = (
         data.groupby("Date")
         .agg(
@@ -203,12 +204,16 @@ def render_activity_heatmap(data: pd.DataFrame) -> None:
     daily_summary["Week"] = daily_summary["Date"].dt.isocalendar().week
     daily_summary["Day"] = daily_summary["Date"].dt.day_name()
 
-    heatmap = (
+    daily_chart = (
         alt.Chart(daily_summary)
         .mark_rect()
         .encode(
-            x=alt.X("Week:O", title="Week of Year"),
-            y=alt.Y("Day:N", sort=DAYS_OF_WEEK, title="Day of Week"),
+            x=alt.X(
+                "Week:O",
+                title="Week of Year",
+                axis=alt.Axis(labels=False, ticks=False, title=None),
+            ),
+            y=alt.Y("Day:N", sort=DAYS_OF_WEEK, title=None),
             color=alt.Color(
                 "Effort:Q", title="Daily Effort", scale=alt.Scale(scheme="greens")
             ),
@@ -216,15 +221,59 @@ def render_activity_heatmap(data: pd.DataFrame) -> None:
                 alt.Tooltip("Date:T", format="%Y-%m-%d"),
                 alt.Tooltip("Effort:Q", format=".1f", title="Total Effort"),
                 alt.Tooltip("Distance (km):Q", format=".1f", title="Total Km"),
-                alt.Tooltip("Name:N", title="People"),
+                alt.Tooltip("Name:N", title="Who"),
                 alt.Tooltip("Type:N", title="Activities"),
             ],
         )
-        .properties(height=250)
-        .configure_axis(labelFontSize=10, titleFontSize=12)
+        .properties(height=220)
     )
 
-    st.altair_chart(heatmap, width="stretch")
+    # --- Weekly Heatmap ---
+    weekly_summary = data.copy()
+    weekly_summary["Week"] = weekly_summary["Date"].dt.isocalendar().week
+    weekly_summary = (
+        weekly_summary.groupby("Week")
+        .agg(
+            {
+                "Effort": "sum",
+                "Distance (km)": "sum",
+                "Name": lambda x: ", ".join(sorted(x.unique())),
+                "Type": lambda x: ", ".join(sorted(x.unique())),
+            }
+        )
+        .reset_index()
+    )
+    weekly_summary["Row"] = "Weekly Total"
+
+    weekly_chart = (
+        alt.Chart(weekly_summary)
+        .mark_rect()
+        .encode(
+            x=alt.X("Week:O", title="Week of Year"),
+            y=alt.Y("Row:N", title=None),
+            color=alt.Color(
+                "Effort:Q", title="Weekly Total", scale=alt.Scale(scheme="greens")
+            ),
+            tooltip=[
+                alt.Tooltip("Week:O", title="Week Number"),
+                alt.Tooltip("Effort:Q", format=".1f", title="Total Effort"),
+                alt.Tooltip("Distance (km):Q", format=".1f", title="Total Km"),
+                alt.Tooltip("Name:N", title="Who"),
+                alt.Tooltip("Type:N", title="Activities"),
+            ],
+        )
+        .properties(height=60)
+    )
+
+    # Combine and config
+    combined = (
+        alt.vconcat(daily_chart, weekly_chart)
+        .resolve_scale(color="independent")
+        .configure_axis(labelFontSize=10, titleFontSize=12)
+        .configure_view(strokeWidth=0)
+    )
+
+    st.altair_chart(combined, width="stretch")
 
 
 def render_team_standings(
