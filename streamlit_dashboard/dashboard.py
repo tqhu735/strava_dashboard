@@ -739,7 +739,6 @@ def main():
     # Individual Section
     st.header("Individual")
     render_individual_standings(filtered_df, history_df, today, current_month)
-    render_individual_goals(filtered_df)
     render_individual_effort_chart(filtered_df)
     st.divider()
 
