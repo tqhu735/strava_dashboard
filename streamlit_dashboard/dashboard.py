@@ -379,6 +379,32 @@ def render_individual_standings(
             st.info("No data available for history.")
 
 
+def render_individual_goals(filtered_df: pd.DataFrame) -> None:
+    """Render progress bars for individual distance goals."""
+    st.subheader("Goal Progress")
+
+    # Get annual distance per person
+    person_stats = filtered_df.groupby("Name")["Distance (km)"].sum().to_dict()
+
+    # Create a grid of columns
+    cols = st.columns(4)
+
+    # Sort goals by person name for consistency (or by progress if preferred)
+    for i, (name, goal) in enumerate(sorted(INDIVIDUAL_GOALS.items())):
+        current = person_stats.get(name, 0)
+        progress = min(1.0, current / goal)
+
+        with cols[i % 4]:
+            st.write(f"**{name}**")
+            st.metric(
+                label="Progress",
+                value=f"{current:,.1f} / {goal:,.0f} km",
+                delta=f"{(current / goal) * 100:.1f}%",
+            )
+            st.progress(progress)
+            st.write("")  # Padding
+
+
 def render_individual_effort_chart(data: pd.DataFrame) -> None:
     """Render the cumulative individual effort line chart."""
     st.subheader("Effort")
@@ -713,6 +739,7 @@ def main():
     # Individual Section
     st.header("Individual")
     render_individual_standings(filtered_df, history_df, today, current_month)
+    render_individual_goals(filtered_df)
     render_individual_effort_chart(filtered_df)
     st.divider()
 
