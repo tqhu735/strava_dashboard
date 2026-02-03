@@ -483,8 +483,6 @@ def render_ai_section(data: pd.DataFrame) -> None:
         st.info(
             ai_data.get("insight", "The coach is currently judging you in silence.")
         )
-        if "model" in ai_data:
-            st.caption(f"Generated with: {ai_data['model']}")
 
         st.subheader("Key Insights")
         ai_facts = ai_data.get("facts", [])
@@ -496,6 +494,9 @@ def render_ai_section(data: pd.DataFrame) -> None:
         elif not ai_facts:
             for fact in random.sample(manual_facts, min(3, len(manual_facts))):
                 st.write(f"• {fact}")
+
+        if "model" in ai_data:
+            st.caption(f"Generated with: {ai_data['model']}")
     else:
         st.subheader("Insights")
         st.info(
