@@ -32,7 +32,6 @@ st.set_page_config(
 def display_metrics(data: pd.DataFrame) -> None:
     """Display key summary metrics in a row of columns."""
     total_km = data["Distance (km)"].sum()
-    total_effort = data["Effort"].sum()
     total_elevation = data["Elevation (m)"].sum()
     total_time_min = data["Time (min)"].sum()
 
@@ -44,7 +43,6 @@ def display_metrics(data: pd.DataFrame) -> None:
     cols[0].metric("Total Distance", f"{total_km:,.1f} km")
     cols[1].metric("Total Time", time_str)
     cols[2].metric("Total Elevation", f"{int(total_elevation)} m")
-    # cols[3].metric("Total Effort", f"{total_effort:,.1f}")
 
 
 def render_goal_progress(data: pd.DataFrame, today: datetime.date) -> None:
