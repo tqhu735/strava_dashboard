@@ -40,11 +40,11 @@ def display_metrics(data: pd.DataFrame) -> None:
     days, hours = divmod(hours, 24)
     time_str = f"{days}d {hours}h" if days > 0 else f"{hours}h {minutes}m"
 
-    cols = st.columns(4)
+    cols = st.columns(3)
     cols[0].metric("Total Distance", f"{total_km:,.1f} km")
-    cols[1].metric("Total Effort", f"{total_effort:,.1f}")
-    cols[2].metric("Total Time", time_str)
-    cols[3].metric("Total Elevation", f"{int(total_elevation)} m")
+    cols[1].metric("Total Time", time_str)
+    cols[2].metric("Total Elevation", f"{int(total_elevation)} m")
+    # cols[3].metric("Total Effort", f"{total_effort:,.1f}")
 
 
 def render_goal_progress(data: pd.DataFrame, today: datetime.date) -> None:
