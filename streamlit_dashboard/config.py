@@ -51,7 +51,7 @@ DAYS_OF_WEEK = [
 ]
 
 # --- AI Configuration ---
-MODELS_TO_TRY = ["gemini-3-flash-preview", "gemma-3-27b-it"]
+MODELS_TO_TRY = ["gemini-3.1-flash-lite-preview", "gemini-3-flash-preview", "gemma-3-27b-it"]
 
 SYSTEM_PROMPT = """
 You are a brutally honest, toxic fitness coach addressing a group of older Gen Z kiwi/aussie mates (~22).
