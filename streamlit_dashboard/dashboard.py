@@ -146,12 +146,12 @@ def run_monte_carlo_simulation(
     for team in daily_effort_df["Team"].unique():
         team_data = (
             daily_effort_df[daily_effort_df["Team"] == team]
-            .set_index("Date")
+            .set_index("Date")["Effort"]
             .reindex(all_dates, fill_value=0)
         )
         team_stats[team] = {
-            "mean": team_data["Effort"].mean(),
-            "std": team_data["Effort"].std(),
+            "mean": team_data.mean(),
+            "std": team_data.std(),
         }
 
     # Simulate future efforts
