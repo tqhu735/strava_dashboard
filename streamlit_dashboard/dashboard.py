@@ -21,6 +21,8 @@ from config import (
     GROUP_DISTANCE_GOAL,
     INDIVIDUAL_GOALS,
     N_SIMULATIONS,
+    SYSTEM_PROMPT,
+    MODELS_TO_TRY,
 )
 
 st.set_page_config(
@@ -175,9 +177,9 @@ def run_monte_carlo_simulation(
 
 
 @st.cache_data(ttl=3600)
-def get_ai_content_cached(summary: str) -> dict:
+def get_ai_content_cached(summary: str, prompt: str, models: list) -> dict:
     """Cached wrapper for AI content generation (1 hour TTL)."""
-    return generate_ai_content(summary)
+    return generate_ai_content(summary, prompt, models)
 
 
 # --- Render Functions ---
@@ -460,7 +462,9 @@ def render_ai_section(data: pd.DataFrame) -> None:
     if "ai_data" not in st.session_state:
         if get_client():
             data_summary = get_data_summary(data)
-            st.session_state["ai_data"] = get_ai_content_cached(data_summary)
+            st.session_state["ai_data"] = get_ai_content_cached(
+                data_summary, SYSTEM_PROMPT, MODELS_TO_TRY
+            )
         else:
             st.session_state["ai_data"] = {}
 
@@ -475,7 +479,9 @@ def render_ai_section(data: pd.DataFrame) -> None:
             if st.button("🔄", help="Refresh insights for current filters"):
                 with st.spinner("Refreshing..."):
                     data_summary = get_data_summary(data)
-                    st.session_state["ai_data"] = get_ai_content_cached(data_summary)
+                    st.session_state["ai_data"] = get_ai_content_cached(
+                        data_summary, SYSTEM_PROMPT, MODELS_TO_TRY
+                    )
                 st.rerun()
 
         st.info(

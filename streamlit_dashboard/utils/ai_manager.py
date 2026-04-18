@@ -43,10 +43,10 @@ def _extract_json(text: str) -> dict | None:
     return None
 
 
-def _build_prompt(summary: str) -> str:
+def _build_prompt(summary: str, system_prompt: str) -> str:
     """Build the full prompt for AI content generation."""
     return (
-        f"{SYSTEM_PROMPT}\n\n"
+        f"{system_prompt}\n\n"
         f"Data Summary:\n{summary}\n\n"
         "Tasks:\n"
         "1. For 'insight': One savage, brutal roast of the group (use your toxic coach persona)\n"
@@ -55,7 +55,7 @@ def _build_prompt(summary: str) -> str:
 
 
 # --- Public Functions ---
-def generate_ai_content(summary: str) -> dict:
+def generate_ai_content(summary: str, system_prompt: str = SYSTEM_PROMPT, models: list = MODELS_TO_TRY) -> dict:
     """
     Generate AI content based on the data summary.
 
@@ -71,9 +71,9 @@ def generate_ai_content(summary: str) -> dict:
     if not client:
         return {}
 
-    prompt = _build_prompt(summary)
+    prompt = _build_prompt(summary, system_prompt)
 
-    for model_name in MODELS_TO_TRY:
+    for model_name in models:
         try:
             print(f"Attempting with model: {model_name}")
             response = client.models.generate_content(
