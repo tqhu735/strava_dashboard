@@ -95,9 +95,8 @@ def render_goal_progress(data: pd.DataFrame, today: datetime.date) -> None:
     st.subheader("Goal Progress")
     st.progress(progress)
 
-    c1, c2 = st.columns(2)
-    c1.metric("Goal", f"{total_distance:,.1f}/{GROUP_DISTANCE_GOAL:,.0f} km")
-    c2.metric(
+    st.metric("Goal", f"{total_distance:,.1f} / {GROUP_DISTANCE_GOAL:,.0f} km")
+    st.metric(
         "Projected Total",
         f"{predicted_total:,.1f} km",
         delta=f"{predicted_total - GROUP_DISTANCE_GOAL:,.1f} km",
@@ -224,6 +223,28 @@ def render_activity_heatmap(data: pd.DataFrame) -> None:
     )
 
     st.altair_chart(heatmap, width="stretch")
+
+
+def render_group_effort_chart(data: pd.DataFrame) -> None:
+    """Render the cumulative group effort line chart."""
+    st.subheader("Group Effort")
+
+    group_daily = data.groupby("Date")["Effort"].sum().reset_index()
+    group_daily = group_daily.sort_values("Date")
+    group_daily["Cumulative Effort"] = group_daily["Effort"].cumsum()
+
+    line_chart = (
+        alt.Chart(group_daily)
+        .mark_line(point=True, strokeWidth=3)
+        .encode(
+            x=alt.X("Date:T", title=None),
+            y=alt.Y("Cumulative Effort:Q", title="Effort"),
+            tooltip=["Date", "Cumulative Effort"],
+        )
+        .properties(height=230)
+    )
+
+    st.altair_chart(line_chart, width="stretch")
 
 
 def render_team_standings(
@@ -724,7 +745,13 @@ def main():
     # Group Section
     st.header("Group")
     render_activity_heatmap(filtered_df)
-    render_goal_progress(filtered_df, today)
+    
+    col_group_effort, col_goal_progress = st.columns(2)
+    with col_group_effort:
+        render_group_effort_chart(filtered_df)
+    with col_goal_progress:
+        render_goal_progress(filtered_df, today)
+        
     st.divider()
 
     # Team Section
