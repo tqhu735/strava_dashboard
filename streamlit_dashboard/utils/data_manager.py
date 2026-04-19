@@ -45,8 +45,10 @@ def get_data_summary(dataframe: pd.DataFrame) -> str:
     top_performers = indiv_stats.head(5).to_dict()
     bottom_performers = indiv_stats.tail(5).to_dict()
 
-    recent_names = (
-        dataframe.sort_values("Date", ascending=False).head(5)["Name"].unique().tolist()
+    recent_activities = (
+        dataframe.sort_values("Date", ascending=False)
+        .head(10)[["Name", "Type", "Distance (km)", "Date"]]
+        .to_dict(orient="records")
     )
 
     return f"""
@@ -58,7 +60,9 @@ Overall Stats:
 
 Leaderboard (Top 5): {top_performers}
 Leaderboard (Bottom 5): {bottom_performers}
-Recently Active: {", ".join(recent_names)}
+
+Recent Specific Activities:
+{recent_activities}
 """
 
 

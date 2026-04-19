@@ -51,7 +51,10 @@ def _build_prompt(summary: str, system_prompt: str) -> str:
         "Tasks:\n"
         "1. For 'insight': One savage, brutal roast of the group (use your toxic coach persona)\n"
         "2. For 'facts': 3 genuine, data-driven insights about trends, comparisons, or patterns (be analytical, not snarky)\n"
-        "3. For 'headlines': A list of exactly 6 funny, sensationalised news ticker snippets poking fun at specific recent activities, as well as individual/team/group progress. Do not include 'Breaking:' or similar."
+        "3. For 'headlines': A list of exactly 6 sensationalised, high-variety news ticker snippets. "
+        "Rotate between different 'news styles' (e.g., 60-Minutes style investigation, tabloid gossip, local sports desk, clickbait, and 'urgent' traffic/weather alerts). "
+        "Avoid using the same person for more than 2 headlines. Use the 'Recent Specific Activities' data to report on exact events. "
+        "Do not include 'Breaking:' or similar."
     )
 
 
