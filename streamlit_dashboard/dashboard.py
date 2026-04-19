@@ -830,6 +830,15 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
             label_visibility="collapsed",
         )
 
+    st.sidebar.divider()
+    if st.sidebar.button(
+        "🔄 Force Refresh AI",
+        use_container_width=True,
+        help="Clear the 1-hour cache and fetch fresh AI content.",
+    ):
+        get_ai_content_cached.clear()
+        st.rerun()
+
     return date_range, selected_teams, selected_types, selected_names
 
 
