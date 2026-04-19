@@ -302,7 +302,19 @@ def render_team_standings(
                 .sort_values("Effort", ascending=False)
                 .reset_index()
             )
-            st.dataframe(stats, width="stretch", hide_index=True)
+            st.dataframe(
+                stats, 
+                width="stretch", 
+                hide_index=True,
+                column_config={
+                    "Effort": st.column_config.ProgressColumn(
+                        "Effort", format="%.1f", min_value=0, max_value=float(stats["Effort"].max())
+                    ),
+                    "Distance (km)": st.column_config.NumberColumn(
+                        "Distance", format="%.1f km"
+                    ),
+                }
+            )
         else:
             st.info("No activities for the current month.")
 
@@ -313,7 +325,19 @@ def render_team_standings(
             .sort_values("Effort", ascending=False)
             .reset_index()
         )
-        st.dataframe(stats, width="stretch", hide_index=True)
+        st.dataframe(
+            stats, 
+            width="stretch", 
+            hide_index=True,
+            column_config={
+                "Effort": st.column_config.ProgressColumn(
+                    "Effort", format="%.1f", min_value=0, max_value=float(stats["Effort"].max())
+                ),
+                "Distance (km)": st.column_config.NumberColumn(
+                    "Distance", format="%.1f km"
+                ),
+            }
+        )
 
     with tab_history:
         st.caption("Winners of each month")
@@ -441,11 +465,7 @@ def render_individual_standings(
         ["Month", "Year", "History"]
     )
 
-    indiv_format = {
-        "Effort": "{:.1f}",
-        "Distance (km)": "{:.1f}",
-        "Time (min)": "{:.0f}",
-    }
+
 
     with indiv_tab_month:
         st.caption(f"Standings for {today.strftime('%B %Y')}")
@@ -461,7 +481,19 @@ def render_individual_standings(
                 .reset_index(drop=True)
             )
             stats.index += 1
-            st.dataframe(stats.style.format(indiv_format), width="stretch")
+            st.dataframe(
+                stats, 
+                width="stretch",
+                column_config={
+                    "Name": st.column_config.TextColumn("Athlete"),
+                    "Team": st.column_config.TextColumn("Team"),
+                    "Effort": st.column_config.ProgressColumn(
+                        "Effort", format="%.1f", min_value=0, max_value=float(stats["Effort"].max())
+                    ),
+                    "Distance (km)": st.column_config.NumberColumn("Distance", format="%.1f km"),
+                    "Time (min)": st.column_config.NumberColumn("Duration", format="%d min"),
+                }
+            )
         else:
             st.info("No activities for the current month.")
 
@@ -476,7 +508,19 @@ def render_individual_standings(
             .reset_index(drop=True)
         )
         stats.index += 1
-        st.dataframe(stats.style.format(indiv_format), width="stretch")
+        st.dataframe(
+            stats, 
+            width="stretch",
+            column_config={
+                "Name": st.column_config.TextColumn("Athlete"),
+                "Team": st.column_config.TextColumn("Team"),
+                "Effort": st.column_config.ProgressColumn(
+                    "Effort", format="%.1f", min_value=0, max_value=float(stats["Effort"].max())
+                ),
+                "Distance (km)": st.column_config.NumberColumn("Distance", format="%.1f km"),
+                "Time (min)": st.column_config.NumberColumn("Duration", format="%d min"),
+            }
+        )
 
     with indiv_tab_history:
         st.caption("Winners of each month")
@@ -612,20 +656,22 @@ def render_activity_feed(data: pd.DataFrame) -> None:
         "Pace (min/km)",
         "Effort",
     ]
-    activity_format = {
-        "Date": lambda t: t.strftime("%Y-%m-%d"),
-        "Distance (km)": "{:.2f}",
-        "Time (min)": "{:.2f}",
-        "Pace (min/km)": "{:.2f}",
-        "Effort": "{:.2f}",
-    }
+
 
     st.dataframe(
-        data.sort_values("Date", ascending=False)[display_cols].style.format(
-            activity_format
-        ),
+        data.sort_values("Date", ascending=False)[display_cols],
         width="stretch",
         hide_index=True,
+        column_config={
+            "Date": st.column_config.DateColumn("Date", format="MMM DD, YYYY"),
+            "Name": st.column_config.TextColumn("Athlete"),
+            "Team": st.column_config.TextColumn("Team"),
+            "Type": st.column_config.TextColumn("Type"),
+            "Distance (km)": st.column_config.NumberColumn("Distance", format="%.2f km"),
+            "Time (min)": st.column_config.NumberColumn("Duration", format="%.0f min"),
+            "Pace (min/km)": st.column_config.NumberColumn("Pace", format="%.2f min/km"),
+            "Effort": st.column_config.NumberColumn("Effort", format="%.2f"),
+        }
     )
 
 
