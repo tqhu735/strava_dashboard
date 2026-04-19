@@ -900,7 +900,7 @@ def main():
             
         st.markdown(
             f"""
-            <div style="background-color: #d32f2f; padding: 10px; margin-bottom: 20px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); position: sticky; top: 2.875rem; z-index: 999;">
+            <div style="background-color: #d32f2f; padding: 10px; margin-bottom: 20px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
                 <marquee scrollamount="8" style="color: #ffffff; font-weight: bold; font-family: inherit; font-size: 1.15rem; vertical-align: middle; text-transform: uppercase;">
                     {headlines_str}
                 </marquee>
