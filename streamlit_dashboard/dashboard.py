@@ -302,19 +302,29 @@ def render_team_standings(
                 .sort_values("Effort", ascending=False)
                 .reset_index()
             )
-            st.dataframe(
-                stats, 
-                width="stretch", 
-                hide_index=True,
-                column_config={
-                    "Effort": st.column_config.ProgressColumn(
-                        "Effort", format="%.1f", min_value=0, max_value=float(stats["Effort"].max())
-                    ),
-                    "Distance (km)": st.column_config.NumberColumn(
-                        "Distance", format="%.1f km"
-                    ),
-                }
+            bar_chart = (
+                alt.Chart(stats)
+                .mark_bar(cornerRadiusEnd=4, height=40)
+                .encode(
+                    x=alt.X("Effort:Q", title="Total Effort", axis=None),
+                    y=alt.Y("Team:N", sort="-x", title=None, axis=alt.Axis(labelFontSize=13, tickSize=0, domain=False)),
+                    color=alt.Color("Team:N", legend=None),
+                    tooltip=[
+                        alt.Tooltip("Team:N"),
+                        alt.Tooltip("Effort:Q", format=".1f"),
+                        alt.Tooltip("Distance (km):Q", format=".1f"),
+                    ]
+                )
             )
+            text = bar_chart.mark_text(
+                align="left",
+                baseline="middle",
+                dx=5,
+                fontWeight="bold"
+            ).encode(
+                text=alt.Text("Effort:Q", format=".1f")
+            )
+            st.altair_chart((bar_chart + text).properties(height=180), use_container_width=True)
         else:
             st.info("No activities for the current month.")
 
@@ -325,19 +335,29 @@ def render_team_standings(
             .sort_values("Effort", ascending=False)
             .reset_index()
         )
-        st.dataframe(
-            stats, 
-            width="stretch", 
-            hide_index=True,
-            column_config={
-                "Effort": st.column_config.ProgressColumn(
-                    "Effort", format="%.1f", min_value=0, max_value=float(stats["Effort"].max())
-                ),
-                "Distance (km)": st.column_config.NumberColumn(
-                    "Distance", format="%.1f km"
-                ),
-            }
+        bar_chart = (
+            alt.Chart(stats)
+            .mark_bar(cornerRadiusEnd=4, height=40)
+            .encode(
+                x=alt.X("Effort:Q", title="Total Effort", axis=None),
+                y=alt.Y("Team:N", sort="-x", title=None, axis=alt.Axis(labelFontSize=13, tickSize=0, domain=False)),
+                color=alt.Color("Team:N", legend=None),
+                tooltip=[
+                    alt.Tooltip("Team:N"),
+                    alt.Tooltip("Effort:Q", format=".1f"),
+                    alt.Tooltip("Distance (km):Q", format=".1f"),
+                ]
+            )
         )
+        text = bar_chart.mark_text(
+            align="left",
+            baseline="middle",
+            dx=5,
+            fontWeight="bold"
+        ).encode(
+            text=alt.Text("Effort:Q", format=".1f")
+        )
+        st.altair_chart((bar_chart + text).properties(height=180), use_container_width=True)
 
     with tab_history:
         st.caption("Winners of each month")
@@ -453,6 +473,38 @@ def render_team_effort_chart(data: pd.DataFrame) -> None:
     st.altair_chart(final_chart, width="stretch")
 
 
+def _render_standings_chart(stats: pd.DataFrame) -> None:
+    if stats.empty:
+        return
+    
+    bar_chart = (
+        alt.Chart(stats)
+        .mark_bar(cornerRadiusEnd=4, height=30)
+        .encode(
+            x=alt.X("Effort:Q", title="Total Effort", axis=None),
+            y=alt.Y("Name:N", sort="-x", title=None, axis=alt.Axis(labelFontSize=12, tickSize=0, domain=False)),
+            color=alt.Color("Team:N"),
+            tooltip=[
+                alt.Tooltip("Name:N"),
+                alt.Tooltip("Team:N"),
+                alt.Tooltip("Effort:Q", format=".1f"),
+                alt.Tooltip("Distance (km):Q", format=".1f"),
+                alt.Tooltip("Time (min):Q", format=".0f"),
+            ]
+        )
+    )
+    text = bar_chart.mark_text(
+        align="left",
+        baseline="middle",
+        dx=5,
+        fontWeight="bold"
+    ).encode(
+        text=alt.Text("Effort:Q", format=".1f")
+    )
+    # Use alt.Step instead of fixed height for dynamic list sizes
+    st.altair_chart((bar_chart + text).properties(height=alt.Step(40)), use_container_width=True)
+
+
 def render_individual_standings(
     filtered_df: pd.DataFrame,
     history_df: pd.DataFrame,
@@ -481,19 +533,7 @@ def render_individual_standings(
                 .reset_index(drop=True)
             )
             stats.index += 1
-            st.dataframe(
-                stats, 
-                width="stretch",
-                column_config={
-                    "Name": st.column_config.TextColumn("Athlete"),
-                    "Team": st.column_config.TextColumn("Team"),
-                    "Effort": st.column_config.ProgressColumn(
-                        "Effort", format="%.1f", min_value=0, max_value=float(stats["Effort"].max())
-                    ),
-                    "Distance (km)": st.column_config.NumberColumn("Distance", format="%.1f km"),
-                    "Time (min)": st.column_config.NumberColumn("Duration", format="%d min"),
-                }
-            )
+            _render_standings_chart(stats)
         else:
             st.info("No activities for the current month.")
 
@@ -508,19 +548,7 @@ def render_individual_standings(
             .reset_index(drop=True)
         )
         stats.index += 1
-        st.dataframe(
-            stats, 
-            width="stretch",
-            column_config={
-                "Name": st.column_config.TextColumn("Athlete"),
-                "Team": st.column_config.TextColumn("Team"),
-                "Effort": st.column_config.ProgressColumn(
-                    "Effort", format="%.1f", min_value=0, max_value=float(stats["Effort"].max())
-                ),
-                "Distance (km)": st.column_config.NumberColumn("Distance", format="%.1f km"),
-                "Time (min)": st.column_config.NumberColumn("Duration", format="%d min"),
-            }
-        )
+        _render_standings_chart(stats)
 
     with indiv_tab_history:
         st.caption("Winners of each month")
