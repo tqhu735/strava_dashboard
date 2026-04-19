@@ -54,7 +54,7 @@ def _build_prompt(summary: str, system_prompt: str) -> str:
         "3. For 'headlines': A list of 6 sensationalised, high-variety news ticker snippets."
         "Rotate between different 'news styles' (e.g., 60-Minutes style investigation, tabloid gossip, local sports desk, clickbait, and 'urgent' traffic/weather alerts)."
         "Avoid using the same person for more than 2 headlines. Use the 'Recent Specific Activities' data to report on exact events. Also target some to individuals/teams/the whole group."
-        "Do not include 'Breaking:' or similar.\n\n"
+        "Avoid the 'Breaking:' pattern or similar.\n\n"
         "Return a valid JSON object with exactly these three keys: 'insight', 'facts', and 'headlines'."
     )
 
