@@ -888,31 +888,8 @@ def main():
         df, date_range, selected_teams, selected_types, selected_names
     )
 
-    # Fetch AI content here to display Breaking News marquee at the top
-    data_summary = get_data_summary(filtered_df)
-    ai_data = get_ai_content_cached(data_summary, SYSTEM_PROMPT, tuple(MODELS_TO_TRY))
-
-    if ai_data and "headlines" in ai_data:
-        headlines = ai_data["headlines"]
-        if isinstance(headlines, list):
-            base_str = " &nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp; ".join(headlines)
-        else:
-            base_str = headlines
-
-        # Concatenate duplicates to ensure the string snakes continuity
-        unit_str = f"BREAKING NEWS &nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp; {base_str} &nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp; "
-        headlines_str = unit_str * 5
-
-        st.markdown(
-            f"""
-            <div style="background-color: #d32f2f; padding: 10px; margin-bottom: 20px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-                <marquee scrollamount="8" style="color: #ffffff; font-weight: bold; font-family: inherit; font-size: 1.15rem; vertical-align: middle; text-transform: uppercase;">
-                    {headlines_str}
-                </marquee>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+    # Reserve space for breaking news ticker
+    ticker_placeholder = st.empty()
 
     # Main Dashboard Header
     st.title("Sleep Comp Fitness Challenge")
@@ -965,6 +942,32 @@ def main():
     render_activity_feed(filtered_df)
 
     # AI Section (Rendered Last)
+    data_summary = get_data_summary(filtered_df)
+    with st.spinner("Analyzing recent activities..."):
+        ai_data = get_ai_content_cached(data_summary, SYSTEM_PROMPT, tuple(MODELS_TO_TRY))
+
+    # Inject Ticker into top placeholder
+    if ai_data and "headlines" in ai_data:
+        headlines = ai_data["headlines"]
+        if isinstance(headlines, list):
+            base_str = " &nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp; ".join(headlines)
+        else:
+            base_str = headlines
+
+        unit_str = f"BREAKING NEWS &nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp; {base_str} &nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp; "
+        headlines_str = unit_str * 5
+
+        ticker_placeholder.markdown(
+            f"""
+            <div style="background-color: #d32f2f; padding: 10px; margin-bottom: 20px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                <marquee scrollamount="8" style="color: #ffffff; font-weight: bold; font-family: inherit; font-size: 1.15rem; vertical-align: middle; text-transform: uppercase;">
+                    {headlines_str}
+                </marquee>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
     with ai_placeholder.container():
         render_ai_section(filtered_df)
 
