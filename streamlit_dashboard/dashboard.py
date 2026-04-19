@@ -227,7 +227,10 @@ def render_activity_heatmap(data: pd.DataFrame) -> None:
 
 def render_group_effort_chart(data: pd.DataFrame) -> None:
     """Render the cumulative distance line chart."""
-    st.subheader("Distance Progress")
+    st.subheader(
+        "Distance Progress",
+        help="The orange line is the required pace to hit the 10,000 km goal.",
+    )
 
     group_daily = data.groupby("Date")["Distance (km)"].sum().reset_index()
     group_daily = group_daily.sort_values("Date")
@@ -250,16 +253,18 @@ def render_group_effort_chart(data: pd.DataFrame) -> None:
         max_date = group_daily["Date"].max()
 
     min_date = pd.to_datetime(COMPETITION_START_DATE)
-    
+
     total_days = (pd.to_datetime(COMPETITION_END_DATE) - min_date).days
     days_to_max = (max_date - min_date).days
     target_distance_at_max = (days_to_max / total_days) * GROUP_DISTANCE_GOAL
 
-    ideal_df = pd.DataFrame({
-        "Date": [min_date, max_date],
-        "Cumulative Distance": [0, target_distance_at_max],
-        "Label": ["Goal Pace", "Goal Pace"]
-    })
+    ideal_df = pd.DataFrame(
+        {
+            "Date": [min_date, max_date],
+            "Cumulative Distance": [0, target_distance_at_max],
+            "Label": ["Goal Pace", "Goal Pace"],
+        }
+    )
 
     target_line = (
         alt.Chart(ideal_df)
@@ -267,7 +272,10 @@ def render_group_effort_chart(data: pd.DataFrame) -> None:
         .encode(
             x="Date:T",
             y="Cumulative Distance:Q",
-            tooltip=[alt.Tooltip("Label:N", title="Goal"), alt.Tooltip("Cumulative Distance:Q", format=".1f")]
+            tooltip=[
+                alt.Tooltip("Label:N", title="Goal"),
+                alt.Tooltip("Cumulative Distance:Q", format=".1f"),
+            ],
         )
     )
 
