@@ -183,8 +183,8 @@ def get_ai_content_cached(summary: str, prompt: str, models: list) -> dict:
 
 # --- Render Functions ---
 def render_activity_heatmap(data: pd.DataFrame) -> None:
-    """Render the activity heatmap showing daily effort."""
-    st.subheader("Activity Heatmap")
+    """Render the effort heatmap showing daily effort."""
+    st.subheader("Effort Heatmap")
 
     daily_summary = (
         data.groupby("Date")
@@ -226,8 +226,8 @@ def render_activity_heatmap(data: pd.DataFrame) -> None:
 
 
 def render_group_effort_chart(data: pd.DataFrame) -> None:
-    """Render the cumulative group effort line chart."""
-    st.subheader("Group Effort")
+    """Render the cumulative effort line chart."""
+    st.subheader("Effort")
 
     group_daily = data.groupby("Date")["Effort"].sum().reset_index()
     group_daily = group_daily.sort_values("Date")
@@ -745,13 +745,13 @@ def main():
     # Group Section
     st.header("Group")
     render_activity_heatmap(filtered_df)
-    
+
     col_group_effort, col_goal_progress = st.columns(2)
     with col_group_effort:
         render_group_effort_chart(filtered_df)
     with col_goal_progress:
         render_goal_progress(filtered_df, today)
-        
+
     st.divider()
 
     # Team Section
