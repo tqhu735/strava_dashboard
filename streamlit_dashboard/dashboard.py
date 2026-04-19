@@ -327,18 +327,71 @@ def render_team_effort_chart(data: pd.DataFrame) -> None:
     team_daily = team_daily.sort_values("Date")
     team_daily["Cumulative Effort"] = team_daily.groupby("Team")["Effort"].cumsum()
 
-    team_line_chart = (
-        alt.Chart(team_daily)
-        .mark_line(point=True)
-        .encode(
-            x=alt.X("Date:T", title=None),
-            y=alt.Y("Cumulative Effort:Q", title="Effort"),
-            color=alt.Color("Team:N"),
-            tooltip=["Date", "Team", "Cumulative Effort"],
+    teams = sorted(team_daily["Team"].unique())
+    if len(teams) == 2:
+        team1, team2 = teams[0], teams[1]
+
+        min_date = data["Date"].min()
+        max_date = data["Date"].max()
+        all_dates = pd.date_range(min_date, max_date)
+
+        pivot_df = team_daily.pivot(
+            index="Date", columns="Team", values="Cumulative Effort"
         )
-        .properties(height=230)
-    )
-    st.altair_chart(team_line_chart, width="stretch")
+        pivot_df = pivot_df.reindex(all_dates).ffill().fillna(0)
+        pivot_df = pivot_df.reset_index().rename(columns={"index": "Date"})
+        pivot_df["Gap"] = (pivot_df[team1] - pivot_df[team2]).abs()
+
+        team_daily = pd.merge(team_daily, pivot_df, on="Date", how="left")
+
+        shared_tooltip = [
+            alt.Tooltip("Date:T", format="%Y-%m-%d"),
+            alt.Tooltip(f"{team1}:Q", format=".1f", title=f"{team1} Effort"),
+            alt.Tooltip(f"{team2}:Q", format=".1f", title=f"{team2} Effort"),
+            alt.Tooltip("Gap:Q", format=".1f", title="Gap"),
+        ]
+
+        area_chart = (
+            alt.Chart(pivot_df)
+            .mark_area(opacity=0.2)
+            .encode(
+                x=alt.X("Date:T", title=None),
+                y=alt.Y(f"{team1}:Q", title="Effort"),
+                y2=alt.Y2(f"{team2}:Q"),
+                color=alt.condition(
+                    f"datum['{team1}'] > datum['{team2}']",
+                    alt.value("#1f77b4"),
+                    alt.value("#ff7f0e"),
+                ),
+                tooltip=shared_tooltip,
+            )
+        )
+
+        team_line_chart = (
+            alt.Chart(team_daily)
+            .mark_line(point=True)
+            .encode(
+                x=alt.X("Date:T", title=None),
+                y=alt.Y("Cumulative Effort:Q", title="Effort"),
+                color=alt.Color("Team:N"),
+                tooltip=shared_tooltip,
+            )
+        )
+        final_chart = (area_chart + team_line_chart).properties(height=230)
+    else:
+        team_line_chart = (
+            alt.Chart(team_daily)
+            .mark_line(point=True)
+            .encode(
+                x=alt.X("Date:T", title=None),
+                y=alt.Y("Cumulative Effort:Q", title="Effort"),
+                color=alt.Color("Team:N"),
+                tooltip=["Date", "Team", "Cumulative Effort"],
+            )
+        )
+        final_chart = team_line_chart.properties(height=230)
+
+    st.altair_chart(final_chart, width="stretch")
 
 
 def render_individual_standings(
