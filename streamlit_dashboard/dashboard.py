@@ -882,6 +882,29 @@ def main():
 
     # Main Dashboard Header
     st.title("Sleep Comp Fitness Challenge")
+
+    # Fetch AI content here to display Breaking News marquee at the top
+    data_summary = get_data_summary(filtered_df)
+    ai_data = get_ai_content_cached(data_summary, SYSTEM_PROMPT, tuple(MODELS_TO_TRY))
+    
+    if ai_data and "headlines" in ai_data:
+        headlines = ai_data["headlines"]
+        if isinstance(headlines, list):
+            headlines_str = " &nbsp;&nbsp;&nbsp; 🔴 &nbsp;&nbsp;&nbsp; ".join(headlines)
+        else:
+            headlines_str = headlines
+            
+        st.markdown(
+            f"""
+            <div style="background-color: #1a1a1a; padding: 10px; border-left: 5px solid #ff4b4b; border-right: 5px solid #ff4b4b; margin-bottom: 20px; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                <marquee scrollamount="6" style="color: #ffffff; font-weight: bold; font-family: 'Courier New', Courier, monospace; font-size: 1.15rem; vertical-align: middle;">
+                    <span style="color: #ff4b4b;">🚨 BREAKING NEWS</span> &nbsp;&nbsp;&nbsp; 🔴 &nbsp;&nbsp;&nbsp; {headlines_str} &nbsp;&nbsp;&nbsp; 🔴
+                </marquee>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
+
     if len(date_range) == 2:
         st.markdown(
             f"*Tracking activities from **{date_range[0]}** to **{date_range[1]}***"

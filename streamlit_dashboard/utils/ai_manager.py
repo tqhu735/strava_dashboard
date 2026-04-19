@@ -50,12 +50,15 @@ def _build_prompt(summary: str, system_prompt: str) -> str:
         f"Data Summary:\n{summary}\n\n"
         "Tasks:\n"
         "1. For 'insight': One savage, brutal roast of the group (use your toxic coach persona)\n"
-        "2. For 'facts': 3 genuine, data-driven insights about trends, comparisons, or patterns (be analytical, not snarky)"
+        "2. For 'facts': 3 genuine, data-driven insights about trends, comparisons, or patterns (be analytical, not snarky)\n"
+        "3. For 'headlines': A list of exactly 3 funny, sensationalised news ticker snippets poking fun at specific recent activities or individual/team/group progress."
     )
 
 
 # --- Public Functions ---
-def generate_ai_content(summary: str, system_prompt: str = SYSTEM_PROMPT, models: list = MODELS_TO_TRY) -> dict:
+def generate_ai_content(
+    summary: str, system_prompt: str = SYSTEM_PROMPT, models: list = MODELS_TO_TRY
+) -> dict:
     """
     Generate AI content based on the data summary.
 
