@@ -906,13 +906,13 @@ def main():
             unsafe_allow_html=True,
         )
 
+    # Main Dashboard Header
+    st.title("Sleep Comp Fitness Challenge")
+
     if len(date_range) == 2:
         st.markdown(
             f"*Tracking activities from **{date_range[0]}** to **{date_range[1]}***"
         )
-
-    # Main Dashboard Header
-    st.title("Sleep Comp Fitness Challenge")
 
     display_metrics(filtered_df)
     st.divider()
