@@ -880,24 +880,21 @@ def main():
         df, date_range, selected_teams, selected_types, selected_names
     )
 
-    # Main Dashboard Header
-    st.title("Sleep Comp Fitness Challenge")
-
     # Fetch AI content here to display Breaking News marquee at the top
     data_summary = get_data_summary(filtered_df)
     ai_data = get_ai_content_cached(data_summary, SYSTEM_PROMPT, tuple(MODELS_TO_TRY))
-    
+
     if ai_data and "headlines" in ai_data:
         headlines = ai_data["headlines"]
         if isinstance(headlines, list):
             base_str = " &nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp; ".join(headlines)
         else:
             base_str = headlines
-            
+
         # Concatenate duplicates to ensure the string snakes continuity
         unit_str = f"BREAKING NEWS &nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp; {base_str} &nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp; "
         headlines_str = unit_str * 5
-            
+
         st.markdown(
             f"""
             <div style="background-color: #d32f2f; padding: 10px; margin-bottom: 20px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
@@ -905,14 +902,17 @@ def main():
                     {headlines_str}
                 </marquee>
             </div>
-            """, 
-            unsafe_allow_html=True
+            """,
+            unsafe_allow_html=True,
         )
 
     if len(date_range) == 2:
         st.markdown(
             f"*Tracking activities from **{date_range[0]}** to **{date_range[1]}***"
         )
+
+    # Main Dashboard Header
+    st.title("Sleep Comp Fitness Challenge")
 
     display_metrics(filtered_df)
     st.divider()
