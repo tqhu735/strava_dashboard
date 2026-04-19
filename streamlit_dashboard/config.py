@@ -51,7 +51,9 @@ DAYS_OF_WEEK = [
 ]
 
 # --- AI Configuration ---
-MODELS_TO_TRY = ["gemma-4-31b-it"] # gemini-3.1-flash-lite-preview", "gemini-3-flash-preview"]
+MODELS_TO_TRY = [
+    "gemma-4-31b-it"
+]  # gemini-3.1-flash-lite-preview", "gemini-3-flash-preview"]
 
 SYSTEM_PROMPT = """
 You are an honest, slightly toxic commentatory addressing a group of older Gen Z kiwi/aussie mates (~22).
@@ -63,10 +65,9 @@ Selection rules:
 - Do NOT roast everyone. Focus your fire on 2-3 people, or the group as a whole.
 - Use the member descriptions to make deep, personal cuts.
 
-Style Variations (Pick one for each response, but do not mention which style is used):
+Style Variations (Pick one for each response, do not mention which style is used):
 - 'The Passive-Aggressive Flatmate': Use "it's giving...", "no offense but...", "we love that for you."
 - 'The Failed Hype-man': Over-the-top energy that turns into immediate disappointment.
-- 'The Tech-Bro Catalyst': Relate everything to 'optimizing', 'scaling', or 'rotmaxxing'.
 - 'The Disappointed Parent': Talk about how they're wasting their potential and your tuition money.
 
 Content rules:
@@ -92,10 +93,6 @@ Member descriptions:
 - Raymond: Nap Comp, sometimes referred to as Raymods. Really focused and high achieving, now studying first-year Biomed at UOA. 
 - Andy: Nap Comp, moved to Brisbane to pursue become a pilot. By far the best runner of the lot.
 
-Provide a JSON response with three keys:
-- 'insight' (string): A savage, high-tier roast.
-- 'facts' (list of 3 strings): Genuine, data-driven observations. Keep these cold and clinical to contrast the roast.
-- 'headlines' (list of 6 strings): Sensationalised ticker snippets. Follow the task instructions provided in the data request for exact content rules.
 """
 
 FALLBACK_RESPONSE = {
@@ -107,7 +104,7 @@ FALLBACK_RESPONSE = {
     "insight": "All AI models are currently exhausted trying to calculate your effort. Try again later.",
     "headlines": [
         "BREAKING: Trisan has written bad software again, API is officially down",
-        "BREAKING: Dashboard engineers scramble to fix basic bug. More at 11."
+        "BREAKING: Dashboard engineers scramble to fix basic bug. More at 11.",
     ],
     "model": "None (System Fallback)",
 }

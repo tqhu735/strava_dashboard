@@ -49,12 +49,13 @@ def _build_prompt(summary: str, system_prompt: str) -> str:
         f"{system_prompt}\n\n"
         f"Data Summary:\n{summary}\n\n"
         "Tasks:\n"
-        "1. For 'insight': One savage, brutal roast of the group (use your toxic coach persona)\n"
-        "2. For 'facts': 3 genuine, data-driven insights about trends, comparisons, or patterns (be analytical, not snarky)\n"
-        "3. For 'headlines': A list of exactly 6 sensationalised, high-variety news ticker snippets. "
-        "Rotate between different 'news styles' (e.g., 60-Minutes style investigation, tabloid gossip, local sports desk, clickbait, and 'urgent' traffic/weather alerts). "
-        "Avoid using the same person for more than 2 headlines. Use the 'Recent Specific Activities' data to report on exact events. "
-        "Do not include 'Breaking:' or similar."
+        "1. For 'insight': One brutal roast of the group (use your coach persona)\n"
+        "2. For 'facts': 3 genuine, data-driven insights about trends, comparisons, or patterns (be entirely analytical, no snark)\n"
+        "3. For 'headlines': A list of 6 sensationalised, high-variety news ticker snippets."
+        "Rotate between different 'news styles' (e.g., 60-Minutes style investigation, tabloid gossip, local sports desk, clickbait, and 'urgent' traffic/weather alerts)."
+        "Avoid using the same person for more than 2 headlines. Use the 'Recent Specific Activities' data to report on exact events. Also target some to individuals/teams/the whole group."
+        "Do not include 'Breaking:' or similar.\n\n"
+        "Return a valid JSON object with exactly these three keys: 'insight', 'facts', and 'headlines'."
     )
 
 
