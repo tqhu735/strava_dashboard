@@ -890,15 +890,19 @@ def main():
     if ai_data and "headlines" in ai_data:
         headlines = ai_data["headlines"]
         if isinstance(headlines, list):
-            headlines_str = " &nbsp;&nbsp;&nbsp; 🔴 &nbsp;&nbsp;&nbsp; ".join(headlines)
+            base_str = " &nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp; ".join(headlines)
         else:
-            headlines_str = headlines
+            base_str = headlines
+            
+        # Concatenate duplicates to ensure the string snakes continuity
+        unit_str = f"BREAKING NEWS &nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp; {base_str} &nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp; "
+        headlines_str = unit_str * 5
             
         st.markdown(
             f"""
-            <div style="background-color: #1a1a1a; padding: 10px; border-left: 5px solid #ff4b4b; border-right: 5px solid #ff4b4b; margin-bottom: 20px; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
-                <marquee scrollamount="6" style="color: #ffffff; font-weight: bold; font-family: 'Courier New', Courier, monospace; font-size: 1.15rem; vertical-align: middle;">
-                    <span style="color: #ff4b4b;">🚨 BREAKING NEWS</span> &nbsp;&nbsp;&nbsp; 🔴 &nbsp;&nbsp;&nbsp; {headlines_str} &nbsp;&nbsp;&nbsp; 🔴
+            <div style="background-color: #d32f2f; padding: 10px; margin-bottom: 20px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); position: sticky; top: 2.875rem; z-index: 999;">
+                <marquee scrollamount="8" style="color: #ffffff; font-weight: bold; font-family: inherit; font-size: 1.15rem; vertical-align: middle; text-transform: uppercase;">
+                    {headlines_str}
                 </marquee>
             </div>
             """, 
