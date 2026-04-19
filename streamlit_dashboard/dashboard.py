@@ -226,25 +226,52 @@ def render_activity_heatmap(data: pd.DataFrame) -> None:
 
 
 def render_group_effort_chart(data: pd.DataFrame) -> None:
-    """Render the cumulative effort line chart."""
-    st.subheader("Effort")
+    """Render the cumulative distance line chart."""
+    st.subheader("Distance Progress")
 
-    group_daily = data.groupby("Date")["Effort"].sum().reset_index()
+    group_daily = data.groupby("Date")["Distance (km)"].sum().reset_index()
     group_daily = group_daily.sort_values("Date")
-    group_daily["Cumulative Effort"] = group_daily["Effort"].cumsum()
+    group_daily["Cumulative Distance"] = group_daily["Distance (km)"].cumsum()
 
     line_chart = (
         alt.Chart(group_daily)
         .mark_line(point=True, strokeWidth=3)
         .encode(
             x=alt.X("Date:T", title=None),
-            y=alt.Y("Cumulative Effort:Q", title="Effort"),
-            tooltip=["Date", "Cumulative Effort"],
+            y=alt.Y("Cumulative Distance:Q", title="Distance (km)"),
+            tooltip=["Date:T", alt.Tooltip("Cumulative Distance:Q", format=".1f")],
         )
         .properties(height=230)
     )
 
-    st.altair_chart(line_chart, width="stretch")
+    if group_daily.empty:
+        max_date = pd.to_datetime(datetime.date.today())
+    else:
+        max_date = group_daily["Date"].max()
+
+    min_date = pd.to_datetime(COMPETITION_START_DATE)
+    
+    total_days = (pd.to_datetime(COMPETITION_END_DATE) - min_date).days
+    days_to_max = (max_date - min_date).days
+    target_distance_at_max = (days_to_max / total_days) * GROUP_DISTANCE_GOAL
+
+    ideal_df = pd.DataFrame({
+        "Date": [min_date, max_date],
+        "Cumulative Distance": [0, target_distance_at_max],
+        "Label": ["Goal Pace", "Goal Pace"]
+    })
+
+    target_line = (
+        alt.Chart(ideal_df)
+        .mark_line(strokeDash=[5, 5], color="#ff7f0e", strokeWidth=2)
+        .encode(
+            x="Date:T",
+            y="Cumulative Distance:Q",
+            tooltip=[alt.Tooltip("Label:N", title="Goal"), alt.Tooltip("Cumulative Distance:Q", format=".1f")]
+        )
+    )
+
+    st.altair_chart((line_chart + target_line), width="stretch")
 
 
 def render_team_standings(
