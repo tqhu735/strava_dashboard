@@ -452,6 +452,70 @@ def render_individual_standings(
             st.info("No data available for history.")
 
 
+def render_individual_records(data: pd.DataFrame) -> None:
+    """Render the top single-activity records."""
+    if data.empty:
+        return
+
+    st.subheader("Single Activity Records")
+
+    # Longest Distance
+    max_dist_idx = data["Distance (km)"].idxmax()
+    max_dist_row = data.loc[max_dist_idx] if pd.notna(max_dist_idx) else None
+
+    # Highest Elevation
+    max_elev_idx = (
+        data["Elevation (m)"].idxmax() if "Elevation (m)" in data.columns else None
+    )
+    max_elev_row = data.loc[max_elev_idx] if pd.notna(max_elev_idx) else None
+
+    # Longest Duration
+    max_time_idx = data["Time (min)"].idxmax()
+    max_time_row = data.loc[max_time_idx] if pd.notna(max_time_idx) else None
+
+    # Highest Effort
+    max_effort_idx = data["Effort"].idxmax()
+    max_effort_row = data.loc[max_effort_idx] if pd.notna(max_effort_idx) else None
+
+    cols = st.columns(4)
+
+    with cols[0]:
+        if max_dist_row is not None:
+            st.metric(
+                "Longest Distance",
+                f"{max_dist_row['Distance (km)']:.1f} km",
+                f"{max_dist_row['Name']} ({max_dist_row['Date'].strftime('%d %b')})",
+                delta_color="off",
+            )
+
+    with cols[1]:
+        if max_elev_row is not None and pd.notna(max_elev_row["Elevation (m)"]):
+            st.metric(
+                "Most Elevation Gain",
+                f"{int(max_elev_row['Elevation (m)'])} m",
+                f"{max_elev_row['Name']} ({max_elev_row['Date'].strftime('%d %b')})",
+                delta_color="off",
+            )
+
+    with cols[2]:
+        if max_time_row is not None:
+            st.metric(
+                "Longest Duration",
+                f"{int(max_time_row['Time (min)'])} min",
+                f"{max_time_row['Name']} ({max_time_row['Date'].strftime('%d %b')})",
+                delta_color="off",
+            )
+
+    with cols[3]:
+        if max_effort_row is not None:
+            st.metric(
+                "Highest Effort",
+                f"{max_effort_row['Effort']:.1f}",
+                f"{max_effort_row['Name']} ({max_effort_row['Date'].strftime('%d %b')})",
+                delta_color="off",
+            )
+
+
 def render_individual_goals(filtered_df: pd.DataFrame) -> None:
     """Render progress bars for individual distance goals."""
     st.subheader("Goal Progress")
@@ -823,6 +887,7 @@ def main():
     # Individual Section
     st.header("Individual")
     render_individual_standings(filtered_df, history_df, today, current_month)
+    render_individual_records(filtered_df)
     render_individual_effort_chart(filtered_df)
     st.divider()
 
