@@ -832,7 +832,7 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
 
     st.sidebar.divider()
     if st.sidebar.button(
-        "🔄 Force Refresh AI",
+        "Force Refresh AI",
         use_container_width=True,
         help="Clear the 1-hour cache and fetch fresh AI content.",
     ):
