@@ -307,24 +307,26 @@ def render_team_standings(
                 .mark_bar(cornerRadiusEnd=4, height=40)
                 .encode(
                     x=alt.X("Effort:Q", title="Total Effort", axis=None),
-                    y=alt.Y("Team:N", sort="-x", title=None, axis=alt.Axis(labelFontSize=13, tickSize=0, domain=False)),
+                    y=alt.Y(
+                        "Team:N",
+                        sort="-x",
+                        title=None,
+                        axis=alt.Axis(labelFontSize=13, tickSize=0, domain=False),
+                    ),
                     color=alt.Color("Team:N", legend=None),
                     tooltip=[
                         alt.Tooltip("Team:N"),
                         alt.Tooltip("Effort:Q", format=".1f"),
                         alt.Tooltip("Distance (km):Q", format=".1f"),
-                    ]
+                    ],
                 )
             )
             text = bar_chart.mark_text(
-                align="left",
-                baseline="middle",
-                dx=5,
-                fontWeight="bold"
-            ).encode(
-                text=alt.Text("Effort:Q", format=".1f")
+                align="left", baseline="middle", dx=5, fontWeight="bold"
+            ).encode(text=alt.Text("Effort:Q", format=".1f"))
+            st.altair_chart(
+                (bar_chart + text).properties(height=180), use_container_width=True
             )
-            st.altair_chart((bar_chart + text).properties(height=180), use_container_width=True)
         else:
             st.info("No activities for the current month.")
 
@@ -340,24 +342,26 @@ def render_team_standings(
             .mark_bar(cornerRadiusEnd=4, height=40)
             .encode(
                 x=alt.X("Effort:Q", title="Total Effort", axis=None),
-                y=alt.Y("Team:N", sort="-x", title=None, axis=alt.Axis(labelFontSize=13, tickSize=0, domain=False)),
+                y=alt.Y(
+                    "Team:N",
+                    sort="-x",
+                    title=None,
+                    axis=alt.Axis(labelFontSize=13, tickSize=0, domain=False),
+                ),
                 color=alt.Color("Team:N", legend=None),
                 tooltip=[
                     alt.Tooltip("Team:N"),
                     alt.Tooltip("Effort:Q", format=".1f"),
                     alt.Tooltip("Distance (km):Q", format=".1f"),
-                ]
+                ],
             )
         )
         text = bar_chart.mark_text(
-            align="left",
-            baseline="middle",
-            dx=5,
-            fontWeight="bold"
-        ).encode(
-            text=alt.Text("Effort:Q", format=".1f")
+            align="left", baseline="middle", dx=5, fontWeight="bold"
+        ).encode(text=alt.Text("Effort:Q", format=".1f"))
+        st.altair_chart(
+            (bar_chart + text).properties(height=180), use_container_width=True
         )
-        st.altair_chart((bar_chart + text).properties(height=180), use_container_width=True)
 
     with tab_history:
         st.caption("Winners of each month")
@@ -370,8 +374,11 @@ def render_team_standings(
 
 def render_win_probability(df: pd.DataFrame, today: datetime.date) -> None:
     """Render the win probability donut chart."""
-    st.subheader("Win Probability")
     days_remaining = (COMPETITION_END_DATE - today).days
+    st.subheader(
+        "Win Probability",
+        help=f"10k simulations over {days_remaining} remaining days."
+    )
 
     if days_remaining > 0:
         daily_effort = df.groupby(["Team", "Date"])["Effort"].sum().reset_index()
@@ -393,7 +400,6 @@ def render_win_probability(df: pd.DataFrame, today: datetime.date) -> None:
         )
 
         st.altair_chart(prob_chart, width="stretch")
-        st.caption(f"10k simulations over {days_remaining} remaining days.")
     else:
         st.info("Competition has ended.")
 
@@ -476,13 +482,18 @@ def render_team_effort_chart(data: pd.DataFrame) -> None:
 def _render_standings_chart(stats: pd.DataFrame) -> None:
     if stats.empty:
         return
-    
+
     bar_chart = (
         alt.Chart(stats)
         .mark_bar(cornerRadiusEnd=4, height=30)
         .encode(
             x=alt.X("Effort:Q", title="Total Effort", axis=None),
-            y=alt.Y("Name:N", sort="-x", title=None, axis=alt.Axis(labelFontSize=12, tickSize=0, domain=False)),
+            y=alt.Y(
+                "Name:N",
+                sort="-x",
+                title=None,
+                axis=alt.Axis(labelFontSize=12, tickSize=0, domain=False),
+            ),
             color=alt.Color("Team:N"),
             tooltip=[
                 alt.Tooltip("Name:N"),
@@ -490,19 +501,16 @@ def _render_standings_chart(stats: pd.DataFrame) -> None:
                 alt.Tooltip("Effort:Q", format=".1f"),
                 alt.Tooltip("Distance (km):Q", format=".1f"),
                 alt.Tooltip("Time (min):Q", format=".0f"),
-            ]
+            ],
         )
     )
     text = bar_chart.mark_text(
-        align="left",
-        baseline="middle",
-        dx=5,
-        fontWeight="bold"
-    ).encode(
-        text=alt.Text("Effort:Q", format=".1f")
-    )
+        align="left", baseline="middle", dx=5, fontWeight="bold"
+    ).encode(text=alt.Text("Effort:Q", format=".1f"))
     # Use alt.Step instead of fixed height for dynamic list sizes
-    st.altair_chart((bar_chart + text).properties(height=alt.Step(40)), use_container_width=True)
+    st.altair_chart(
+        (bar_chart + text).properties(height=alt.Step(40)), use_container_width=True
+    )
 
 
 def render_individual_standings(
@@ -516,8 +524,6 @@ def render_individual_standings(
     indiv_tab_month, indiv_tab_year, indiv_tab_history = st.tabs(
         ["Month", "Year", "History"]
     )
-
-
 
     with indiv_tab_month:
         st.caption(f"Standings for {today.strftime('%B %Y')}")
@@ -650,24 +656,50 @@ def render_individual_goals(filtered_df: pd.DataFrame) -> None:
 
 
 def render_individual_effort_chart(data: pd.DataFrame) -> None:
-    """Render the cumulative individual effort line chart."""
-    st.subheader("Effort")
+    """Render the cumulative individual effort line chart with padded zero-days."""
+    st.subheader("Effort Tracking")
 
-    chart_df = data.sort_values("Date").copy()
-    chart_df["Cumulative Effort"] = chart_df.groupby("Name")["Effort"].cumsum()
+    if data.empty:
+        st.info("No data available.")
+        return
 
+    # Create a continuous daily timeline for all athletes
+    min_date = data["Date"].min()
+    max_date = data["Date"].max()
+    all_dates = pd.date_range(min_date, max_date)
+    names = data["Name"].unique()
+
+    # Reindex to ensure every person has a 0 effort entry for days they didn't train
+    multi_idx = pd.MultiIndex.from_product([all_dates, names], names=["Date", "Name"])
+
+    # Sum total effort per day per person
+    daily_effort = data.groupby(["Date", "Name"])["Effort"].sum().reset_index()
+    daily_effort = daily_effort.set_index(["Date", "Name"])
+
+    # Pad out the missing days with zeros
+    full_daily_effort = daily_effort.reindex(multi_idx, fill_value=0).reset_index()
+
+    # Compute statistically accurate cumulative sum per person
+    full_daily_effort = full_daily_effort.sort_values(["Name", "Date"])
+    full_daily_effort["Cumulative Effort"] = full_daily_effort.groupby("Name")["Effort"].cumsum()
+
+    # Plot the accurate cumulative tracking chart
     line_chart = (
-        alt.Chart(chart_df)
-        .mark_line(point=True)
+        alt.Chart(full_daily_effort)
+        .mark_line(interpolate="step-after")
         .encode(
-            x="Date:T",
-            y="Cumulative Effort:Q",
-            color="Name:N",
-            tooltip=["Date", "Name", "Type", "Distance (km)", "Effort"],
+            x=alt.X("Date:T", title=None),
+            y=alt.Y("Cumulative Effort:Q", title="Total Effort"),
+            color=alt.Color("Name:N"),
+            tooltip=[
+                alt.Tooltip("Date:T", format="%Y-%m-%d"),
+                alt.Tooltip("Name:N"),
+                alt.Tooltip("Cumulative Effort:Q", format=".1f", title="Total Effort"),
+            ],
         )
     )
 
-    st.altair_chart(line_chart, width="stretch")
+    st.altair_chart(line_chart, use_container_width=True)
 
 
 def render_activity_feed(data: pd.DataFrame) -> None:
@@ -685,7 +717,6 @@ def render_activity_feed(data: pd.DataFrame) -> None:
         "Effort",
     ]
 
-
     st.dataframe(
         data.sort_values("Date", ascending=False)[display_cols],
         width="stretch",
@@ -695,11 +726,15 @@ def render_activity_feed(data: pd.DataFrame) -> None:
             "Name": st.column_config.TextColumn("Athlete"),
             "Team": st.column_config.TextColumn("Team"),
             "Type": st.column_config.TextColumn("Type"),
-            "Distance (km)": st.column_config.NumberColumn("Distance", format="%.2f km"),
+            "Distance (km)": st.column_config.NumberColumn(
+                "Distance", format="%.2f km"
+            ),
             "Time (min)": st.column_config.NumberColumn("Duration", format="%.0f min"),
-            "Pace (min/km)": st.column_config.NumberColumn("Pace", format="%.2f min/km"),
+            "Pace (min/km)": st.column_config.NumberColumn(
+                "Pace", format="%.2f min/km"
+            ),
             "Effort": st.column_config.NumberColumn("Effort", format="%.2f"),
-        }
+        },
     )
 
 
@@ -1018,7 +1053,9 @@ def main():
     # AI Section (Rendered Last)
     data_summary = get_data_summary(df)
     with st.spinner("Analyzing recent activities..."):
-        ai_data = get_ai_content_cached(data_summary, SYSTEM_PROMPT, tuple(MODELS_TO_TRY))
+        ai_data = get_ai_content_cached(
+            data_summary, SYSTEM_PROMPT, tuple(MODELS_TO_TRY)
+        )
 
     # Inject Ticker into top placeholder
     if ai_data and "headlines" in ai_data:
