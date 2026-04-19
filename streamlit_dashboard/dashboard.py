@@ -325,7 +325,7 @@ def render_team_standings(
                 align="left", baseline="middle", dx=5, fontWeight="bold"
             ).encode(text=alt.Text("Effort:Q", format=".1f"))
             st.altair_chart(
-                (bar_chart + text).properties(height=180), use_container_width=True
+                (bar_chart + text).properties(height=180), width="stretch"
             )
         else:
             st.info("No activities for the current month.")
@@ -360,7 +360,7 @@ def render_team_standings(
             align="left", baseline="middle", dx=5, fontWeight="bold"
         ).encode(text=alt.Text("Effort:Q", format=".1f"))
         st.altair_chart(
-            (bar_chart + text).properties(height=180), use_container_width=True
+            (bar_chart + text).properties(height=180), width="stretch"
         )
 
     with tab_history:
@@ -509,7 +509,7 @@ def _render_standings_chart(stats: pd.DataFrame) -> None:
     ).encode(text=alt.Text("Effort:Q", format=".1f"))
     # Use alt.Step instead of fixed height for dynamic list sizes
     st.altair_chart(
-        (bar_chart + text).properties(height=alt.Step(40)), use_container_width=True
+        (bar_chart + text).properties(height=alt.Step(40)), width="stretch"
     )
 
 
