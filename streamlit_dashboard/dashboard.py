@@ -175,9 +175,9 @@ def run_monte_carlo_simulation(
     return win_probs
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=3600 * 4)
 def get_ai_content_cached(summary: str, prompt: str, models: list) -> dict:
-    """Cached wrapper for AI content generation (1 hour TTL)."""
+    """Cached wrapper for AI content generation (4 hour TTL)."""
     return generate_ai_content(summary, prompt, models)
 
 
