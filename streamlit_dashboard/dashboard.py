@@ -942,7 +942,7 @@ def main():
     render_activity_feed(filtered_df)
 
     # AI Section (Rendered Last)
-    data_summary = get_data_summary(filtered_df)
+    data_summary = get_data_summary(df)
     with st.spinner("Analyzing recent activities..."):
         ai_data = get_ai_content_cached(data_summary, SYSTEM_PROMPT, tuple(MODELS_TO_TRY))
 
@@ -969,7 +969,7 @@ def main():
         )
 
     with ai_placeholder.container():
-        render_ai_section(filtered_df)
+        render_ai_section(df)
 
 
 if __name__ == "__main__":
