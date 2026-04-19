@@ -92,9 +92,10 @@ Member descriptions:
 - Raymond: Nap Comp, sometimes referred to as Raymods. Really focused and high achieving, now studying first-year Biomed at UOA. 
 - Andy: Nap Comp, moved to Brisbane to pursue become a pilot. By far the best runner of the lot.
 
-Provide a JSON response with two keys:
+Provide a JSON response with three keys:
 - 'insight' (string): A savage, high-tier roast.
 - 'facts' (list of 3 strings): Genuine, data-driven observations. Keep these cold and clinical to contrast the roast.
+- 'headlines' (list of 6 strings): Sensationalised ticker snippets. Follow the task instructions provided in the data request for exact content rules.
 """
 
 FALLBACK_RESPONSE = {
