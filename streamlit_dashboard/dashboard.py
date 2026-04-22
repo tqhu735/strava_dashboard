@@ -49,39 +49,6 @@ def display_metrics(data: pd.DataFrame) -> None:
 
 def render_goal_progress(data: pd.DataFrame, today: datetime.date) -> None:
     """Render a progress bar for the group distance goal with predictions."""
-    # # --- January Challenge ---
-    # st.markdown("---")
-    # st.subheader("January 1000 km Goal")
-
-    # jan_goal = 1000.0
-    # jan_start = datetime.date(COMPETITION_START_DATE.year, 1, 1)
-    # jan_end = datetime.date(COMPETITION_START_DATE.year, 1, 31)
-
-    # # Filter for January data
-    # jan_mask = (data["Date"].dt.date >= jan_start) & (data["Date"].dt.date <= jan_end)
-    # jan_distance = data.loc[jan_mask, "Distance (km)"].sum()
-    # jan_progress = min(1.0, jan_distance / jan_goal)
-
-    # # Calculate Jan prediction
-    # days_passed_jan = (min(today, jan_end) - jan_start).days + 1
-    # days_passed_jan = max(1, days_passed_jan)
-    # jan_total_days = 31
-
-    # if days_passed_jan > 0:
-    #     jan_predicted = (jan_distance / days_passed_jan) * jan_total_days
-    # else:
-    #     jan_predicted = 0
-
-    # st.progress(jan_progress)
-
-    # j1, j2 = st.columns(2)
-    # j1.metric("Jan Distance", f"{jan_distance:,.1f}/{jan_goal:,.0f} km")
-    # j2.metric(
-    #     "Jan Projected",
-    #     f"{jan_predicted:,.1f} km",
-    #     delta=f"{jan_predicted - jan_goal:,.1f} km",
-    # )
-
     total_distance = data["Distance (km)"].sum()
     progress = min(1.0, total_distance / GROUP_DISTANCE_GOAL)
 
@@ -282,6 +249,35 @@ def render_group_effort_chart(data: pd.DataFrame) -> None:
     st.altair_chart((line_chart + target_line), width="stretch")
 
 
+def _render_team_bar_chart(stats: pd.DataFrame) -> None:
+    """Render a horizontal bar chart for team standings."""
+    bar_chart = (
+        alt.Chart(stats)
+        .mark_bar(cornerRadiusEnd=4, height=40)
+        .encode(
+            x=alt.X("Effort:Q", title="Total Effort", axis=None),
+            y=alt.Y(
+                "Team:N",
+                sort="-x",
+                title=None,
+                axis=alt.Axis(labelFontSize=13, tickSize=0, domain=False),
+            ),
+            color=alt.Color("Team:N", legend=None),
+            tooltip=[
+                alt.Tooltip("Team:N"),
+                alt.Tooltip("Effort:Q", format=".1f"),
+                alt.Tooltip("Distance (km):Q", format=".1f"),
+            ],
+        )
+    )
+    text = bar_chart.mark_text(
+        align="left", baseline="middle", dx=5, fontWeight="bold"
+    ).encode(text=alt.Text("Effort:Q", format=".1f"))
+    st.altair_chart(
+        (bar_chart + text).properties(height=180), width="stretch"
+    )
+
+
 def render_team_standings(
     filtered_df: pd.DataFrame,
     history_df: pd.DataFrame,
@@ -302,31 +298,7 @@ def render_team_standings(
                 .sort_values("Effort", ascending=False)
                 .reset_index()
             )
-            bar_chart = (
-                alt.Chart(stats)
-                .mark_bar(cornerRadiusEnd=4, height=40)
-                .encode(
-                    x=alt.X("Effort:Q", title="Total Effort", axis=None),
-                    y=alt.Y(
-                        "Team:N",
-                        sort="-x",
-                        title=None,
-                        axis=alt.Axis(labelFontSize=13, tickSize=0, domain=False),
-                    ),
-                    color=alt.Color("Team:N", legend=None),
-                    tooltip=[
-                        alt.Tooltip("Team:N"),
-                        alt.Tooltip("Effort:Q", format=".1f"),
-                        alt.Tooltip("Distance (km):Q", format=".1f"),
-                    ],
-                )
-            )
-            text = bar_chart.mark_text(
-                align="left", baseline="middle", dx=5, fontWeight="bold"
-            ).encode(text=alt.Text("Effort:Q", format=".1f"))
-            st.altair_chart(
-                (bar_chart + text).properties(height=180), width="stretch"
-            )
+            _render_team_bar_chart(stats)
         else:
             st.info("No activities for the current month.")
 
@@ -337,31 +309,7 @@ def render_team_standings(
             .sort_values("Effort", ascending=False)
             .reset_index()
         )
-        bar_chart = (
-            alt.Chart(stats)
-            .mark_bar(cornerRadiusEnd=4, height=40)
-            .encode(
-                x=alt.X("Effort:Q", title="Total Effort", axis=None),
-                y=alt.Y(
-                    "Team:N",
-                    sort="-x",
-                    title=None,
-                    axis=alt.Axis(labelFontSize=13, tickSize=0, domain=False),
-                ),
-                color=alt.Color("Team:N", legend=None),
-                tooltip=[
-                    alt.Tooltip("Team:N"),
-                    alt.Tooltip("Effort:Q", format=".1f"),
-                    alt.Tooltip("Distance (km):Q", format=".1f"),
-                ],
-            )
-        )
-        text = bar_chart.mark_text(
-            align="left", baseline="middle", dx=5, fontWeight="bold"
-        ).encode(text=alt.Text("Effort:Q", format=".1f"))
-        st.altair_chart(
-            (bar_chart + text).properties(height=180), width="stretch"
-        )
+        _render_team_bar_chart(stats)
 
     with tab_history:
         st.caption("Winners of each month")
@@ -629,6 +577,90 @@ def render_individual_records(data: pd.DataFrame) -> None:
             )
 
 
+def render_head_to_head_comparison(data: pd.DataFrame) -> None:
+    """Render a head-to-head comparison of two selected athletes."""
+    st.subheader("Head-to-Head Comparison")
+
+    if data.empty:
+        st.info("No data available.")
+        return
+
+    athletes = sorted(data["Name"].unique())
+    if len(athletes) < 2:
+        st.info("Need at least two athletes for comparison.")
+        return
+
+    sel_col1, sel_col2 = st.columns(2)
+    with sel_col1:
+        athlete1 = st.selectbox("Athlete 1", athletes, index=0)
+    with sel_col2:
+        athlete2 = st.selectbox(
+            "Athlete 2", athletes, index=min(1, len(athletes) - 1)
+        )
+
+    if athlete1 == athlete2:
+        st.warning("Please select two different athletes.")
+        return
+
+    a1_data = data[data["Name"] == athlete1]
+    a2_data = data[data["Name"] == athlete2]
+
+    stat_defs = [
+        ("Distance (km)", "Distance (km)"),
+        ("Effort", "Effort"),
+        ("Time (min)", "Time (min)"),
+        ("Activities", None),
+    ]
+    if "Elevation (m)" in data.columns:
+        stat_defs.append(("Elevation (m)", "Elevation (m)"))
+
+    rows = []
+    for label, col in stat_defs:
+        if col is not None:
+            a1_val = float(a1_data[col].sum()) if not a1_data.empty else 0.0
+            a2_val = float(a2_data[col].sum()) if not a2_data.empty else 0.0
+        else:
+            a1_val = float(len(a1_data))
+            a2_val = float(len(a2_data))
+
+        max_val = max(a1_val, a2_val, 1.0)
+        rows.append({"Stat": label, "Athlete": athlete1, "Value": a1_val, "Pct": a1_val / max_val})
+        rows.append({"Stat": label, "Athlete": athlete2, "Value": a2_val, "Pct": a2_val / max_val})
+
+    chart_df = pd.DataFrame(rows)
+    stat_order = [s[0] for s in stat_defs]
+
+    bar = (
+        alt.Chart(chart_df)
+        .mark_bar(cornerRadiusEnd=4)
+        .encode(
+            x=alt.X("Pct:Q", axis=None, scale=alt.Scale(domain=[0, 1.25])),
+            y=alt.Y(
+                "Stat:N",
+                sort=stat_order,
+                title=None,
+                axis=alt.Axis(labelFontSize=12, labelFontWeight="bold", tickSize=0, domain=False),
+            ),
+            yOffset=alt.YOffset("Athlete:N"),
+            color=alt.Color("Athlete:N", legend=alt.Legend(orient="top")),
+            tooltip=[
+                alt.Tooltip("Athlete:N"),
+                alt.Tooltip("Stat:N"),
+                alt.Tooltip("Value:Q", format=",.1f"),
+            ],
+        )
+    )
+
+    text = bar.mark_text(
+        align="left", baseline="middle", dx=5, fontWeight="bold", fontSize=11
+    ).encode(text=alt.Text("Value:Q", format=",.1f"))
+
+    st.altair_chart(
+        (bar + text).properties(height=alt.Step(25)),
+        width="stretch",
+    )
+
+
 def render_individual_goals(filtered_df: pd.DataFrame) -> None:
     """Render progress bars for individual distance goals."""
     st.subheader("Goal Progress")
@@ -699,7 +731,7 @@ def render_individual_effort_chart(data: pd.DataFrame) -> None:
         )
     )
 
-    st.altair_chart(line_chart, use_container_width=True)
+    st.altair_chart(line_chart, width="stretch")
 
 
 def render_activity_feed(data: pd.DataFrame) -> None:
@@ -802,11 +834,11 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
     # --- Data Refresh & Reset Controls ---
     col_update, col_reset = st.sidebar.columns(2)
     with col_update:
-        if st.button("Refresh", use_container_width=True, help="Fetch latest data"):
+        if st.button("Refresh", width="stretch", help="Fetch latest data"):
             load_data.clear()
             st.rerun()
     with col_reset:
-        if st.button("Reset", use_container_width=True, help="Reset all filters"):
+        if st.button("Reset", width="stretch", help="Reset all filters"):
             for key in list(st.session_state.keys()):
                 if key.startswith("filter_"):
                     del st.session_state[key]
@@ -814,8 +846,8 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
 
     if st.sidebar.button(
         "Force Refresh AI",
-        use_container_width=True,
-        help="Clear the 1-hour cache and fetch fresh AI content.",
+        width="stretch",
+        help="Clear the 4-hour cache and fetch fresh AI content.",
     ):
         get_ai_content_cached.clear()
         st.rerun()
@@ -872,16 +904,14 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
     if "filter_teams" not in st.session_state:
         st.session_state["filter_teams"] = all_teams
 
-    teams_label = "Teams"
-
-    with st.sidebar.expander(teams_label, expanded=True):
+    with st.sidebar.expander("Teams", expanded=True):
         col_all, col_clear = st.columns(2)
         with col_all:
-            if st.button("Select All", key="teams_all", use_container_width=True):
+            if st.button("Select All", key="teams_all", width="stretch"):
                 st.session_state["filter_teams"] = all_teams
                 st.rerun()
         with col_clear:
-            if st.button("Clear", key="teams_clear", use_container_width=True):
+            if st.button("Clear", key="teams_clear", width="stretch"):
                 st.session_state["filter_teams"] = []
                 st.rerun()
 
@@ -899,16 +929,14 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
     if "filter_types" not in st.session_state:
         st.session_state["filter_types"] = all_types
 
-    types_label = "Activity Type"
-
-    with st.sidebar.expander(types_label, expanded=True):
+    with st.sidebar.expander("Activity Type", expanded=True):
         col_all, col_clear = st.columns(2)
         with col_all:
-            if st.button("Select All", key="types_all", use_container_width=True):
+            if st.button("Select All", key="types_all", width="stretch"):
                 st.session_state["filter_types"] = all_types
                 st.rerun()
         with col_clear:
-            if st.button("Clear", key="types_clear", use_container_width=True):
+            if st.button("Clear", key="types_clear", width="stretch"):
                 st.session_state["filter_types"] = []
                 st.rerun()
 
@@ -926,16 +954,14 @@ def render_sidebar(df: pd.DataFrame) -> tuple:
     if "filter_names" not in st.session_state:
         st.session_state["filter_names"] = all_names
 
-    names_label = "Competitors"
-
-    with st.sidebar.expander(names_label, expanded=True):
+    with st.sidebar.expander("Competitors", expanded=True):
         col_all, col_clear = st.columns(2)
         with col_all:
-            if st.button("Select All", key="names_all", use_container_width=True):
+            if st.button("Select All", key="names_all", width="stretch"):
                 st.session_state["filter_names"] = all_names
                 st.rerun()
         with col_clear:
-            if st.button("Clear", key="names_clear", use_container_width=True):
+            if st.button("Clear", key="names_clear", width="stretch"):
                 st.session_state["filter_names"] = []
                 st.rerun()
 
@@ -1045,6 +1071,7 @@ def main():
     render_individual_standings(filtered_df, history_df, today, current_month)
     render_individual_effort_chart(filtered_df)
     render_individual_records(filtered_df)
+    render_head_to_head_comparison(filtered_df)
     st.divider()
 
     # Activity Feed

@@ -51,9 +51,7 @@ DAYS_OF_WEEK = [
 ]
 
 # --- AI Configuration ---
-MODELS_TO_TRY = [
-    "gemma-4-31b-it"
-]  # gemini-3.1-flash-lite-preview", "gemini-3-flash-preview"]
+MODELS_TO_TRY = ["gemma-4-31b-it"]
 
 SYSTEM_PROMPT = """
 You are an honest, slightly toxic commentatory addressing a group of older Gen Z kiwi/aussie mates (~22).
