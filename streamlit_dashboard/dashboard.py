@@ -41,13 +41,16 @@ def display_metrics(data: pd.DataFrame) -> None:
     days, hours = divmod(hours, 24)
     time_str = f"{days}d {hours}h" if days > 0 else f"{hours}h {minutes}m"
 
-    cols = st.columns(3)
+    num_activities = len(data)
+
+    cols = st.columns(4)
     for col, (label, value) in zip(
         cols,
         [
-            ("Total Distance", f"{total_km:,.1f} km"),
+            ("Total Distance", f"{total_km:,.0f} km"),
             ("Total Time", time_str),
             ("Total Elevation", f"{int(total_elevation)} m"),
+            ("Activities", f"{num_activities:,}"),
         ],
     ):
         with col:
@@ -78,7 +81,7 @@ def render_goal_progress(data: pd.DataFrame, today: datetime.date) -> None:
             f"{predicted_total:,.1f} km",
             delta=f"{predicted_total - GROUP_DISTANCE_GOAL:,.1f} km",
             help="Prediction based on current daily average extrapolated to 365 days.",
-    )
+        )
 
 
 def get_winner_history(
@@ -712,14 +715,14 @@ def render_individual_goals(filtered_df: pd.DataFrame) -> None:
         progress = min(1.0, current / goal)
 
         with cols[i % 4]:
-            st.write(f"**{name}**")
-            st.metric(
-                label="Progress",
-                value=f"{current:,.1f} / {goal:,.0f} km",
-                delta=f"{(current / goal) * 100:.1f}%",
-            )
-            st.progress(progress)
-            st.write("")  # Padding
+            with st.container(border=True):
+                st.write(f"**{name}**")
+                st.metric(
+                    label="Progress",
+                    value=f"{current:,.1f} / {goal:,.0f} km",
+                    delta=f"{(current / goal) * 100:.1f}%",
+                )
+                st.progress(progress)
 
 
 def render_individual_effort_chart(data: pd.DataFrame) -> None:
@@ -774,6 +777,7 @@ def render_individual_effort_chart(data: pd.DataFrame) -> None:
 def render_activity_feed(data: pd.DataFrame) -> None:
     """Render the activity feed table."""
     st.header("Activities")
+    st.caption(f"{len(data):,} activities")
 
     display_cols = [
         "Date",
