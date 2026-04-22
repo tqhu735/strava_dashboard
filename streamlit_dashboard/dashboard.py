@@ -1,5 +1,5 @@
 """
-Sleep Comp Fitness Challenge Dashboard
+Sleep Comp Fitness Tracker Dashboard
 Main entry point for the Streamlit application.
 """
 
@@ -26,7 +26,7 @@ from config import (
 )
 
 st.set_page_config(
-    page_title="Sleep Comp Fitness Challenge", page_icon="🏃", layout="wide"
+    page_title="Sleep Comp Fitness Tracker", page_icon="🏃", layout="wide"
 )
 
 
@@ -1068,7 +1068,7 @@ def main():
     ticker_placeholder = st.empty()
 
     # Main Dashboard Header
-    st.title("Sleep Comp Fitness Challenge")
+    st.title("Sleep Comp Fitness Tracker")
 
     if len(date_range) == 2:
         st.markdown(
