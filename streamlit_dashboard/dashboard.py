@@ -42,9 +42,17 @@ def display_metrics(data: pd.DataFrame) -> None:
     time_str = f"{days}d {hours}h" if days > 0 else f"{hours}h {minutes}m"
 
     cols = st.columns(3)
-    cols[0].metric("Total Distance", f"{total_km:,.1f} km")
-    cols[1].metric("Total Time", time_str)
-    cols[2].metric("Total Elevation", f"{int(total_elevation)} m")
+    for col, (label, value) in zip(
+        cols,
+        [
+            ("Total Distance", f"{total_km:,.1f} km"),
+            ("Total Time", time_str),
+            ("Total Elevation", f"{int(total_elevation)} m"),
+        ],
+    ):
+        with col:
+            with st.container(border=True):
+                st.metric(label, value)
 
 
 def render_goal_progress(data: pd.DataFrame, today: datetime.date) -> None:
@@ -62,12 +70,14 @@ def render_goal_progress(data: pd.DataFrame, today: datetime.date) -> None:
     st.subheader("Goal Progress")
     st.progress(progress)
 
-    st.metric("Goal", f"{total_distance:,.1f} / {GROUP_DISTANCE_GOAL:,.0f} km")
-    st.metric(
-        "Projected Total",
-        f"{predicted_total:,.1f} km",
-        delta=f"{predicted_total - GROUP_DISTANCE_GOAL:,.1f} km",
-        help="Prediction based on current daily average extrapolated to 365 days.",
+    with st.container(border=True):
+        st.metric("Goal", f"{total_distance:,.1f} / {GROUP_DISTANCE_GOAL:,.0f} km")
+    with st.container(border=True):
+        st.metric(
+            "Projected Total",
+            f"{predicted_total:,.1f} km",
+            delta=f"{predicted_total - GROUP_DISTANCE_GOAL:,.1f} km",
+            help="Prediction based on current daily average extrapolated to 365 days.",
     )
 
 
@@ -273,9 +283,7 @@ def _render_team_bar_chart(stats: pd.DataFrame) -> None:
     text = bar_chart.mark_text(
         align="left", baseline="middle", dx=5, fontWeight="bold"
     ).encode(text=alt.Text("Effort:Q", format=".1f"))
-    st.altair_chart(
-        (bar_chart + text).properties(height=180), width="stretch"
-    )
+    st.altair_chart((bar_chart + text).properties(height=180), width="stretch")
 
 
 def render_team_standings(
@@ -324,8 +332,7 @@ def render_win_probability(df: pd.DataFrame, today: datetime.date) -> None:
     """Render the win probability donut chart."""
     days_remaining = (COMPETITION_END_DATE - today).days
     st.subheader(
-        "Win Probability",
-        help=f"10k simulations over {days_remaining} remaining days."
+        "Win Probability", help=f"10k simulations over {days_remaining} remaining days."
     )
 
     if days_remaining > 0:
@@ -456,9 +463,7 @@ def _render_standings_chart(stats: pd.DataFrame) -> None:
         align="left", baseline="middle", dx=5, fontWeight="bold"
     ).encode(text=alt.Text("Effort:Q", format=".1f"))
     # Use alt.Step instead of fixed height for dynamic list sizes
-    st.altair_chart(
-        (bar_chart + text).properties(height=alt.Step(40)), width="stretch"
-    )
+    st.altair_chart((bar_chart + text).properties(height=alt.Step(40)), width="stretch")
 
 
 def render_individual_standings(
@@ -538,43 +543,59 @@ def render_individual_records(data: pd.DataFrame) -> None:
     max_effort_idx = data["Effort"].idxmax()
     max_effort_row = data.loc[max_effort_idx] if pd.notna(max_effort_idx) else None
 
+    records = [
+        (
+            "Longest Distance",
+            max_dist_row,
+            (
+                f"{max_dist_row['Distance (km)']:.1f} km"
+                if max_dist_row is not None
+                else None
+            ),
+            True,
+        ),
+        (
+            "Most Elevation Gain",
+            max_elev_row,
+            (
+                f"{int(max_elev_row['Elevation (m)'])} m"
+                if max_elev_row is not None
+                and pd.notna(max_elev_row.get("Elevation (m)"))
+                else None
+            ),
+            max_elev_row is not None and pd.notna(max_elev_row.get("Elevation (m)")),
+        ),
+        (
+            "Longest Duration",
+            max_time_row,
+            (
+                f"{int(max_time_row['Time (min)'])} min"
+                if max_time_row is not None
+                else None
+            ),
+            True,
+        ),
+        (
+            "Highest Effort",
+            max_effort_row,
+            f"{max_effort_row['Effort']:.1f}" if max_effort_row is not None else None,
+            True,
+        ),
+    ]
+
     cols = st.columns(4)
-
-    with cols[0]:
-        if max_dist_row is not None:
-            st.metric(
-                "Longest Distance",
-                f"{max_dist_row['Distance (km)']:.1f} km",
-                f"{max_dist_row['Name']} ({max_dist_row['Date'].strftime('%d %b')})",
-                delta_color="off",
-            )
-
-    with cols[1]:
-        if max_elev_row is not None and pd.notna(max_elev_row["Elevation (m)"]):
-            st.metric(
-                "Most Elevation Gain",
-                f"{int(max_elev_row['Elevation (m)'])} m",
-                f"{max_elev_row['Name']} ({max_elev_row['Date'].strftime('%d %b')})",
-                delta_color="off",
-            )
-
-    with cols[2]:
-        if max_time_row is not None:
-            st.metric(
-                "Longest Duration",
-                f"{int(max_time_row['Time (min)'])} min",
-                f"{max_time_row['Name']} ({max_time_row['Date'].strftime('%d %b')})",
-                delta_color="off",
-            )
-
-    with cols[3]:
-        if max_effort_row is not None:
-            st.metric(
-                "Highest Effort",
-                f"{max_effort_row['Effort']:.1f}",
-                f"{max_effort_row['Name']} ({max_effort_row['Date'].strftime('%d %b')})",
-                delta_color="off",
-            )
+    for col, (title, row, value, show) in zip(cols, records):
+        with col:
+            with st.container(border=True):
+                if row is not None and show and value is not None:
+                    st.metric(
+                        title,
+                        value,
+                        f"{row['Name']} ({row['Date'].strftime('%d %b')})",
+                        delta_color="off",
+                    )
+                else:
+                    st.metric(title, "—")
 
 
 def render_head_to_head_comparison(data: pd.DataFrame) -> None:
@@ -594,9 +615,7 @@ def render_head_to_head_comparison(data: pd.DataFrame) -> None:
     with sel_col1:
         athlete1 = st.selectbox("Athlete 1", athletes, index=0)
     with sel_col2:
-        athlete2 = st.selectbox(
-            "Athlete 2", athletes, index=min(1, len(athletes) - 1)
-        )
+        athlete2 = st.selectbox("Athlete 2", athletes, index=min(1, len(athletes) - 1))
 
     if athlete1 == athlete2:
         st.warning("Please select two different athletes.")
@@ -624,8 +643,22 @@ def render_head_to_head_comparison(data: pd.DataFrame) -> None:
             a2_val = float(len(a2_data))
 
         max_val = max(a1_val, a2_val, 1.0)
-        rows.append({"Stat": label, "Athlete": athlete1, "Value": a1_val, "Pct": a1_val / max_val})
-        rows.append({"Stat": label, "Athlete": athlete2, "Value": a2_val, "Pct": a2_val / max_val})
+        rows.append(
+            {
+                "Stat": label,
+                "Athlete": athlete1,
+                "Value": a1_val,
+                "Pct": a1_val / max_val,
+            }
+        )
+        rows.append(
+            {
+                "Stat": label,
+                "Athlete": athlete2,
+                "Value": a2_val,
+                "Pct": a2_val / max_val,
+            }
+        )
 
     chart_df = pd.DataFrame(rows)
     stat_order = [s[0] for s in stat_defs]
@@ -639,7 +672,9 @@ def render_head_to_head_comparison(data: pd.DataFrame) -> None:
                 "Stat:N",
                 sort=stat_order,
                 title=None,
-                axis=alt.Axis(labelFontSize=12, labelFontWeight="bold", tickSize=0, domain=False),
+                axis=alt.Axis(
+                    labelFontSize=12, labelFontWeight="bold", tickSize=0, domain=False
+                ),
             ),
             yOffset=alt.YOffset("Athlete:N"),
             color=alt.Color("Athlete:N", legend=alt.Legend(orient="top")),
@@ -713,7 +748,9 @@ def render_individual_effort_chart(data: pd.DataFrame) -> None:
 
     # Compute statistically accurate cumulative sum per person
     full_daily_effort = full_daily_effort.sort_values(["Name", "Date"])
-    full_daily_effort["Cumulative Effort"] = full_daily_effort.groupby("Name")["Effort"].cumsum()
+    full_daily_effort["Cumulative Effort"] = full_daily_effort.groupby("Name")[
+        "Effort"
+    ].cumsum()
 
     # Plot the accurate cumulative tracking chart
     line_chart = (
