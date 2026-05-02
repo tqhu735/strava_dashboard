@@ -41,3 +41,41 @@ const MULTIPLIERS = {
 };
 
 const DISCORD_COLOR = 15548997; // Strava-esque Orange/Red
+
+const DISCORD_PHRASES = [
+    "{name} attempted a {type}!",
+    "{name} tried to {type}!",
+    "{name} somehow completed a {type}!",
+    "{name} survived a {type}!",
+    "{name} suffered through a {type}!",
+    "{name} crushed a {type}!",
+    "{name} bravely faced a {type}!",
+    "{name} absolutely destroyed a {type}!",
+    "{name} stumbled through a {type}!",
+    "{name} miraculously finished a {type}!",
+    "{name} casually knocked out a {type}!",
+    "{name} actually did a {type}!",
+    "{name} barely survived a {type}!",
+    "{name} endured a {type}!",
+    "{name} pretended to do a {type}!",
+    "{name} embarrassed themselves during a {type}!",
+    "{name} calls this a {type}? Yikes.",
+    "{name} disgraced the team with a {type}!",
+    "{name} disappointed everyone with a {type}!",
+    "{name} cried their way through a {type}!",
+    "{name} crawled across the finish line of a {type}!",
+    "{name} had a miserable time on a {type}!",
+    "Look out everyone, {name} is on the loose after a {type}!",
+    "The local authorities have been notified that {name} finished a {type}.",
+    "Wait, did {name} just actually {type}? I don't believe it.",
+    "Breaking: {name} survives a {type}. Scientists are baffled.",
+    "A {type}? In this economy, {name}?",
+    "Legend says {name} is still recovering from that {type}.",
+    "Is it a bird? Is it a plane? No, it's just {name} finishing a very slow {type}.",
+    "{name} vs {type}: The {type} won, but {name} finished anyway.",
+    "Breaking News: {name} actually left the house for a {type}.",
+    "Rumor has it {name} only did that {type} for the Discord notification.",
+    "Breaking: {name} has completed a {type}. The world is forever changed.",
+    "Wait, {name} did a {type}? Is everyone okay?",
+    "Alert: {name} was spotted doing a {type}. Proceed with caution."
+];

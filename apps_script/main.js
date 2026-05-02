@@ -86,31 +86,6 @@ function sendDiscordNotification(newActivities) {
         return;
     }
 
-    const phrases = [
-        "{name} attempted a {type}!",
-        "{name} tried to {type}!",
-        "{name} somehow completed a {type}!",
-        "{name} survived a {type}!",
-        "{name} suffered through a {type}!",
-        "{name} crushed a {type}!",
-        "{name} bravely faced a {type}!",
-        "{name} absolutely destroyed a {type}!",
-        "{name} stumbled through a {type}!",
-        "{name} miraculously finished a {type}!",
-        "{name} casually knocked out a {type}!",
-        "{name} actually did a {type}!",
-        "{name} barely survived a {type}!",
-        "{name} endured a {type}!",
-        "{name} pretended to do a {type}!",
-        "{name} embarrassed themselves during a {type}!",
-        "{name} calls this a {type}? Yikes.",
-        "{name} disgraced the team with a {type}!",
-        "{name} disappointed everyone with a {type}!",
-        "{name} cried their way through a {type}!",
-        "{name} crawled across the finish line of a {type}!",
-        "{name} had a miserable time on a {type}!"
-    ];
-
     const embeds = filteredActivities.map(act => {
         const [id, name, team, date, dist, effDist, duration, pace, elevation, type] = act;
         const multiplier = MULTIPLIERS[type] || 0.0;
@@ -138,7 +113,7 @@ function sendDiscordNotification(newActivities) {
         const discordId = DISCORD_IDS[name];
         const mention = (discordId && discordId !== '') ? `<@${discordId}>` : name;
 
-        const randomMessage = phrases[Math.floor(Math.random() * phrases.length)]
+        const randomMessage = DISCORD_PHRASES[Math.floor(Math.random() * DISCORD_PHRASES.length)]
             .replace('{name}', mention)
             .replace('{type}', type);
 
