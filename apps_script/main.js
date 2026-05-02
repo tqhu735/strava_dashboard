@@ -115,12 +115,7 @@ function sendDiscordNotification(newActivities) {
         const [id, name, team, date, dist, effDist, duration, pace, elevation, type] = act;
         const multiplier = MULTIPLIERS[type] || 0.0;
 
-        const randomTitle = phrases[Math.floor(Math.random() * phrases.length)]
-            .replace('{name}', name)
-            .replace('{type}', type);
-
         return {
-            title: randomTitle,
             color: DISCORD_COLOR,
             fields: [
                 { name: 'Distance', value: `${dist.toFixed(2)} km`, inline: true },
@@ -138,11 +133,17 @@ function sendDiscordNotification(newActivities) {
     for (let i = 0; i < filteredActivities.length; i++) {
         const act = filteredActivities[i];
         const name = act[1];
+        const type = act[9];
+        
         const discordId = DISCORD_IDS[name];
         const mention = (discordId && discordId !== '') ? `<@${discordId}>` : name;
 
+        const randomMessage = phrases[Math.floor(Math.random() * phrases.length)]
+            .replace('{name}', mention)
+            .replace('{type}', type);
+
         const payload = {
-            content: `${mention} just uploaded an activity!`,
+            content: randomMessage,
             embeds: [embeds[i]]
         };
 
