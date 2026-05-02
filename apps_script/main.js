@@ -169,12 +169,23 @@ function sendDiscordNotification(newActivities) {
                     let waitTime = 2000; // Default wait time if header is missing
                     const headers = response.getHeaders();
                     
-                    // Discord might return lowercase or capitalized header
-                    const retryAfterHeader = headers['Retry-After'] || headers['retry-after'];
-                    if (retryAfterHeader) {
-                        // Discord's Retry-After header is usually in seconds
-                        waitTime = (parseFloat(retryAfterHeader) * 1000) + 1000; 
+                    try {
+                        const body = JSON.parse(response.getContentText());
+                        if (body.retry_after) {
+                            // Discord sometimes returns seconds (3.17) and sometimes ms (3170)
+                            waitTime = body.retry_after < 1000 ? body.retry_after * 1000 : body.retry_after;
+                        }
+                    } catch (e) {
+                        // Fallback to headers
+                        const retryAfterHeader = headers['Retry-After'] || headers['retry-after'];
+                        if (retryAfterHeader) {
+                            const val = parseFloat(retryAfterHeader);
+                            waitTime = val < 100 ? val * 1000 : val; 
+                        }
                     }
+                    
+                    waitTime = Math.round(waitTime + 500); // Add 500ms buffer
+                    if (waitTime > 15000) waitTime = 15000; // Cap at 15s to avoid GAS execution limits
                     
                     Logger.log(`Rate limited (429). Retrying in ${waitTime}ms... (Attempt ${retries + 1}/${maxRetries + 1})`);
                     Utilities.sleep(waitTime);
