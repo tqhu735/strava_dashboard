@@ -120,15 +120,50 @@ function sendDiscordNotification(newActivities) {
         const options = {
             method: 'post',
             contentType: 'application/json',
-            payload: JSON.stringify(payload)
+            payload: JSON.stringify(payload),
+            muteHttpExceptions: true
         };
 
-        try {
-            UrlFetchApp.fetch(DISCORD_WEBHOOK_URL, options);
-            Utilities.sleep(1000);
-        } catch (e) {
-            Logger.log(`Discord notification error: ${e.message}`);
+        let success = false;
+        let retries = 0;
+        const maxRetries = 3;
+
+        while (!success && retries <= maxRetries) {
+            try {
+                const response = UrlFetchApp.fetch(DISCORD_WEBHOOK_URL, options);
+                const responseCode = response.getResponseCode();
+
+                if (responseCode >= 200 && responseCode < 300) {
+                    success = true;
+                    Utilities.sleep(1000); // Standard delay between requests
+                } else if (responseCode === 429) {
+                    let waitTime = 2000; // Default wait time if header is missing
+                    const headers = response.getHeaders();
+                    
+                    // Discord might return lowercase or capitalized header
+                    const retryAfterHeader = headers['Retry-After'] || headers['retry-after'];
+                    if (retryAfterHeader) {
+                        // Discord's Retry-After header is usually in seconds
+                        waitTime = (parseFloat(retryAfterHeader) * 1000) + 1000; 
+                    }
+                    
+                    Logger.log(`Rate limited (429). Retrying in ${waitTime}ms... (Attempt ${retries + 1}/${maxRetries + 1})`);
+                    Utilities.sleep(waitTime);
+                    retries++;
+                } else {
+                    Logger.log(`Unexpected Discord error: ${responseCode} - ${response.getContentText()}`);
+                    break; // Break on other HTTP errors (400, 401, etc.)
+                }
+            } catch (e) {
+                Logger.log(`Fetch error during Discord notification: ${e.message}`);
+                Utilities.sleep(2000 * (retries + 1)); // Backoff on network errors
+                retries++;
+            }
+        }
+        
+        if (!success) {
+            Logger.log(`Failed to send notification for ${name} after multiple attempts.`);
         }
     }
-    Logger.log(`Successfully sent ${embeds.length} individual activities to Discord.`);
+    Logger.log(`Finished processing Discord notifications.`);
 }
