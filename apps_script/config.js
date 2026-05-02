@@ -72,10 +72,19 @@ const DISCORD_PHRASES = [
     "A {type}? In this economy, {name}?",
     "Legend says {name} is still recovering from that {type}.",
     "Is it a bird? Is it a plane? No, it's just {name} finishing a very slow {type}.",
-    "{name} vs {type}: The {type} won, but {name} finished anyway.",
     "Breaking News: {name} actually left the house for a {type}.",
     "Rumor has it {name} only did that {type} for the Discord notification.",
     "Breaking: {name} has completed a {type}. The world is forever changed.",
     "Wait, {name} did a {type}? Is everyone okay?",
-    "Alert: {name} was spotted doing a {type}. Proceed with caution."
+    "Alert: {name} was spotted doing a {type}. Proceed with caution.",
+    "{name} just finished a {type} and is now demanding a medal.",
+    "Everyone pretend to be impressed by the {type} that {name} just did.",
+    "Please clap for {name}, who just completed a {type}.",
+    "Someone call an ambulance, {name} just finished a {type}.",
+    "{name} successfully completed a {type} without passing out.",
+    "The prophecy has been fulfilled: {name} did a {type}.",
+    "A moment of silence for the calories {name} burned during that {type}.",
+    "Who hacked this account? There's no way {name} actually did a {type}.",
+    "{name} claims to have done a {type}. We demand video evidence.",
+    "Against all odds, {name} finished a {type} today."
 ];
