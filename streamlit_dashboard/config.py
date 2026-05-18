@@ -101,8 +101,8 @@ FALLBACK_RESPONSE = {
     ],
     "insight": "All AI models are currently exhausted trying to calculate your effort. Try again later.",
     "headlines": [
-        "BREAKING: Trisan has written bad software again, API is officially down",
-        "BREAKING: Dashboard engineers scramble to fix basic bug. More at 11.",
+        "Trisan has written bad software again, API is officially down",
+        "Dashboard engineers scramble to fix basic bug. More at 11.",
     ],
     "model": "None (System Fallback)",
 }
